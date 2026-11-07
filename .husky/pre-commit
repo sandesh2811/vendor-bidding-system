@@ -1,0 +1,3 @@
+# lint only the apps that have staged changes
+git diff --cached --quiet -- backend || pnpm --dir backend lint
+git diff --cached --quiet -- frontend || pnpm --dir frontend lint

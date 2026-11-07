@@ -1,0 +1,3 @@
+allowBuilds:
+  '@scarf/scarf': false # swagger-ui telemetry
+  bcrypt: true
