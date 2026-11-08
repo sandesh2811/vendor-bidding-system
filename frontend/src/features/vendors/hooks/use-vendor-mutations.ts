@@ -1,12 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  createVendor,
-  type CreateVendorInput,
-  updateVendor,
-  type UpdateVendorInput,
-  vendorKeys,
-} from "./vendors.api";
+import { createVendor, updateVendor, vendorKeys } from "../api/vendors.api";
+import type { CreateVendorInput, UpdateVendorInput } from "../types";
 
 export function useCreateVendor() {
   const queryClient = useQueryClient();

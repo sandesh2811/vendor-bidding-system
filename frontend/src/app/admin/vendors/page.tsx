@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { VendorsView } from "@/features/vendors/vendors-view";
+import { VendorsView } from "@/features/vendors/components/list/vendors-view";
 
 export const metadata: Metadata = { title: "Vendors" };
 
