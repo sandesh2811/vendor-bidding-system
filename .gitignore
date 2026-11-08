@@ -12,3 +12,5 @@ coverage/
 openspec
 skills-lock.json
 docs
+# uploaded files (UPLOAD_DIR)
+backend/uploads/

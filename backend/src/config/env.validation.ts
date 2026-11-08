@@ -38,6 +38,11 @@ export class EnvironmentVariables {
 
   @IsUrl({ require_tld: false })
   FRONTEND_ORIGIN: string;
+
+  /* root for uploaded files (quotation photos); relative paths resolve from the process cwd */
+  @IsString()
+  @MinLength(1)
+  UPLOAD_DIR: string = 'uploads';
 }
 
 export function validate(

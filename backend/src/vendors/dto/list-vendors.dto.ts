@@ -12,7 +12,7 @@ import {
   PaginationQueryDto,
 } from '../../common/dto/pagination.dto';
 import { toBoolean, trim } from '../../common/transforms';
-import { Vendor } from '../vendor.entity';
+import { Vendor } from '../entities/vendor.entity';
 
 export class ListVendorsQueryDto extends PaginationQueryDto {
   @IsOptional()

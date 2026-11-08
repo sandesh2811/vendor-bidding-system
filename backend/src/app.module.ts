@@ -14,6 +14,7 @@ import { DatabaseExceptionFilter } from './common/filters/database-exception.fil
 import { requestIdMiddleware } from './common/request-id.middleware';
 import { SnakeNamingStrategy } from './database/snake-naming.strategy';
 import { type EnvironmentVariables, validate } from './config/env.validation';
+import { QuotationsModule } from './quotations/quotations.module';
 import { VendorContextMiddleware } from './vendors/vendor-context.middleware';
 import { VendorsModule } from './vendors/vendors.module';
 
@@ -32,6 +33,7 @@ import { VendorsModule } from './vendors/vendors.module';
     }),
     AuthModule,
     VendorsModule,
+    QuotationsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: DatabaseExceptionFilter }],
 })

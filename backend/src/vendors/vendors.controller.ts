@@ -15,7 +15,7 @@ import type { Paginated } from '../common/pagination.helper';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { ListVendorsQueryDto } from './dto/list-vendors.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
-import type { Vendor } from './vendor.entity';
+import type { Vendor } from './entities/vendor.entity';
 import { VendorsDocs } from './vendors.docs';
 import { VendorsService } from './vendors.service';
 

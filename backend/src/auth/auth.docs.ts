@@ -7,7 +7,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 
 export const AuthDocs = {
   controller: () => ApiTags('Auth'),

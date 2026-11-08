@@ -14,7 +14,7 @@ import { UsersService } from '../users/users.service';
 import type { CreateVendorDto } from './dto/create-vendor.dto';
 import type { ListVendorsQueryDto } from './dto/list-vendors.dto';
 import type { UpdateVendorDto } from './dto/update-vendor.dto';
-import type { Vendor } from './vendor.entity';
+import type { Vendor } from './entities/vendor.entity';
 import { VendorsRepository } from './vendors.repository';
 
 @Injectable()

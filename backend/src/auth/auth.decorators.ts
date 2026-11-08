@@ -2,6 +2,7 @@ import {
   applyDecorators,
   createParamDecorator,
   type ExecutionContext,
+  ForbiddenException,
   SetMetadata,
   UnauthorizedException,
   UseGuards,
@@ -17,7 +18,8 @@ import {
   ROLES_KEY,
   type UserRole,
 } from '../common/constants';
-import type { User } from '../users/user.entity';
+import type { User } from '../users/entities/user.entity';
+import type { Vendor } from '../vendors/entities/vendor.entity';
 import { AuthGuard } from './auth.guard';
 import type { AuthedRequest } from './user-context.middleware';
 
@@ -41,5 +43,16 @@ export const CurrentUser = createParamDecorator(
     if (!user) throw new UnauthorizedException();
 
     return user;
+  },
+);
+
+/* the active vendor attached by VendorContextMiddleware; use behind @Auth(UserRole.Vendor) to scope every query */
+export const CurrentVendor = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): Vendor => {
+    const { user } = ctx.switchToHttp().getRequest<AuthedRequest>();
+    if (!user) throw new UnauthorizedException();
+    if (!user.vendor) throw new ForbiddenException();
+
+    return user.vendor;
   },
 );
