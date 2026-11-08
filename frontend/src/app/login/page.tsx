@@ -1,20 +1,29 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
-import { errorMessage, login, meQuery } from "@/lib/api";
+import { type FormEvent, useEffect } from "react";
+import { BrandMark } from "@/components/layout/brand-mark";
+import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { homeFor } from "@/features/auth/require-role";
+import { login, meQuery } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: user } = useQuery(meQuery);
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: (user) => {
-      queryClient.setQueryData(meQuery.queryKey, user);
-      router.push("/");
-    },
+    onSuccess: (loggedIn) => queryClient.setQueryData(meQuery.queryKey, loggedIn),
   });
+
+  /* already signed in, or just signed in: go to that user's portal */
+  useEffect(() => {
+    if (user) router.replace(homeFor(user));
+  }, [user, router]);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,23 +32,62 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="w-full max-w-sm rounded-lg bg-white p-6 shadow">
-      <h1 className="mb-4 text-xl font-semibold">Log in</h1>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <label htmlFor="email" className="text-sm font-medium">Email</label>
-        <input id="email" name="email" type="email" autoComplete="email" required className="rounded border px-3 py-2" />
-        <label htmlFor="password" className="text-sm font-medium">Password</label>
-        <input id="password" name="password" type="password" autoComplete="current-password" required className="rounded border px-3 py-2" />
-        {mutation.isError && (
-          <p role="alert" className="text-sm text-red-600">{errorMessage(mutation.error)}</p>
-        )}
-        <button type="submit" disabled={mutation.isPending} className="rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-50">
-          {mutation.isPending ? "Logging in…" : "Log in"}
-        </button>
-      </form>
-      <p className="mt-4 text-sm">
-        No account? Ask Mero Event for your vendor login.
-      </p>
-    </main>
+    <div className="grid min-h-svh lg:grid-cols-[1fr_1.1fr]">
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-sidebar-foreground lg:flex">
+        <div className="flex items-center gap-2.5">
+          <BrandMark className="size-8" />
+          <span className="font-semibold text-sidebar-accent-foreground">Mero Event</span>
+        </div>
+        <div className="max-w-md space-y-4">
+          <p className="text-sm font-medium tracking-wide text-brand uppercase">Vendor bidding</p>
+          <h2 className="text-3xl leading-tight font-semibold text-sidebar-accent-foreground">
+            Request quotes, compare bids and book the right vendor for every event.
+          </h2>
+        </div>
+        <p className="text-xs text-sidebar-foreground/60">Digital Events Pvt Ltd</p>
+      </aside>
+
+      <main className="flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <BrandMark className="size-8" />
+            <span className="font-semibold">Mero Event</span>
+          </div>
+          <div className="mb-8 space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+            <p className="text-sm text-muted-foreground">Mero Event staff and partner vendors.</p>
+          </div>
+
+          <form onSubmit={onSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input id="email" name="email" type="email" autoComplete="email" required className="h-10" />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="h-10"
+                />
+              </Field>
+              <Field>
+                <Button type="submit" size="lg" className="h-10" disabled={mutation.isPending || mutation.isSuccess}>
+                  {(mutation.isPending || mutation.isSuccess) && <Spinner data-icon="inline-start" />}
+                  Sign in
+                </Button>
+                <FieldDescription className="text-center">
+                  Vendor without an account? Ask your Mero Event contact for a login.
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        </div>
+      </main>
+    </div>
   );
 }

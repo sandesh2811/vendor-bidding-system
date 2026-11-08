@@ -9,6 +9,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UserContextMiddleware } from './auth/user-context.middleware';
+import { API_DEFAULT_VERSION } from './common/constants';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
 import { requestIdMiddleware } from './common/request-id.middleware';
 import { SnakeNamingStrategy } from './database/snake-naming.strategy';
@@ -38,12 +39,21 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer.apply(requestIdMiddleware).forRoutes('{*path}');
 
-    /* user first, then vendor: unauthenticated requests never reach the vendor check */
+    /* user first, then vendor: unauthenticated requests never reach the vendor check.
+       Excludes must carry the URI version, or they never match /api/v1/... and login itself gets a 401 */
     consumer
       .apply(UserContextMiddleware, VendorContextMiddleware)
       .exclude(
-        { path: 'auth/login', method: RequestMethod.POST },
-        { path: 'auth/logout', method: RequestMethod.POST },
+        {
+          path: 'auth/login',
+          method: RequestMethod.POST,
+          version: API_DEFAULT_VERSION,
+        },
+        {
+          path: 'auth/logout',
+          method: RequestMethod.POST,
+          version: API_DEFAULT_VERSION,
+        },
       )
       .forRoutes('{*path}');
   }
