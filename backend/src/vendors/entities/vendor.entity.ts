@@ -5,7 +5,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { UserRole, VendorCategory } from '../common/constants';
+import { UserRole, VendorCategory } from '../../common/constants';
 
 @Entity('vendors')
 export class Vendor {

@@ -8,8 +8,8 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { UserRole } from '../common/constants';
-import { Vendor } from '../vendors/vendor.entity';
+import { UserRole } from '../../common/constants';
+import { Vendor } from '../../vendors/entities/vendor.entity';
 
 @Entity('users')
 export class User {

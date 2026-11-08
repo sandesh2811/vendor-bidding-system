@@ -9,7 +9,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { VendorPageDto } from './dto/list-vendors.dto';
-import { Vendor } from './vendor.entity';
+import { Vendor } from './entities/vendor.entity';
 
 export const VendorsDocs = {
   controller: () => ApiTags('Vendors (admin)'),

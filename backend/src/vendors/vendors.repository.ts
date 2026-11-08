@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type FindOptionsWhere, ILike, type Repository } from 'typeorm';
 import type { VendorCategory } from '../common/constants';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 import type { NewUser } from '../users/users.repository';
-import { Vendor } from './vendor.entity';
+import { Vendor } from './entities/vendor.entity';
 
 export type NewVendor = Omit<Vendor, 'id' | 'isActive' | 'createdAt'>;
 export type VendorChanges = Partial<Omit<Vendor, 'id' | 'createdAt'>>;

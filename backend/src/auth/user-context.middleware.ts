@@ -6,7 +6,7 @@ import {
 import type { NextFunction, Request, Response } from 'express';
 import { ACCESS_TOKEN_COOKIE } from '../common/constants';
 import { getRequestContext } from '../common/request-context';
-import type { User } from '../users/user.entity';
+import type { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
 
 export interface AuthedRequest extends Request {

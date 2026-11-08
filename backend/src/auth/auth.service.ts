@@ -1,6 +1,6 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import type { User } from '../users/user.entity';
+import type { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import type { LoginDto } from './dto/login.dto';
 

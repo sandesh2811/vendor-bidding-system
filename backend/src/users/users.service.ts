@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { BCRYPT_COST, UserRole } from '../common/constants';
-import type { User } from './user.entity';
+import type { User } from './entities/user.entity';
 import { UsersRepository } from './users.repository';
 
 export interface NewAdmin {

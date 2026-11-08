@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Response } from 'express';
 import { ACCESS_TOKEN_COOKIE } from '../common/constants';
 import { type EnvironmentVariables, NodeEnv } from '../config/env.validation';
-import type { User } from '../users/user.entity';
+import type { User } from '../users/entities/user.entity';
 import { AuthDocs } from './auth.docs';
 import { Auth, CurrentUser } from './auth.decorators';
 import { AuthService } from './auth.service';
