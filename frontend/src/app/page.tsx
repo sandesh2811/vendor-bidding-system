@@ -1,44 +1,38 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { errorMessage, logout, meQuery } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { QueryError } from "@/components/layout/query-error";
+import { Spinner } from "@/components/ui/spinner";
+import { homeFor } from "@/features/auth/require-role";
+import { meQuery } from "@/lib/api";
 
+/* entry point: send each user to their portal, or to login */
 export default function HomePage() {
-  const queryClient = useQueryClient();
-  const { data: user, isPending, isError, error } = useQuery(meQuery);
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess: () => queryClient.setQueryData(meQuery.queryKey, null),
-  });
+  const router = useRouter();
+  const { data: user, isPending, isError, error, refetch, isFetching } = useQuery(meQuery);
 
-  if (isPending) return <p>Loading…</p>;
-  if (isError) return <p role="alert" className="text-red-600">{errorMessage(error)}</p>;
+  useEffect(() => {
+    if (!isPending && !isError) router.replace(user ? homeFor(user) : "/login");
+  }, [isPending, isError, user, router]);
 
-  if (!user) {
+  if (isError) {
     return (
-      <main className="flex flex-col items-center gap-4">
-        <h1 className="text-xl font-semibold">Vendor Bidding System</h1>
-        <Link href="/login" className="rounded bg-gray-900 px-4 py-2 text-white">Log in</Link>
-      </main>
+      <div className="flex min-h-svh items-center justify-center p-4">
+        <QueryError
+          title="Couldn't reach Mero Event"
+          error={error}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+      </div>
     );
   }
 
   return (
-    <main className="flex flex-col items-center gap-2">
-      <h1 className="text-xl font-semibold">Welcome, {user.name}</h1>
-      <p className="text-gray-600">{user.email} · {user.role}</p>
-      {logoutMutation.isError && (
-        <p role="alert" className="text-sm text-red-600">{errorMessage(logoutMutation.error)}</p>
-      )}
-      <button
-        type="button"
-        onClick={() => logoutMutation.mutate()}
-        disabled={logoutMutation.isPending}
-        className="mt-2 rounded border px-4 py-2 disabled:opacity-50"
-      >
-        Log out
-      </button>
-    </main>
+    <div className="flex min-h-svh items-center justify-center">
+      <Spinner className="size-5 text-muted-foreground" />
+    </div>
   );
 }
