@@ -32,6 +32,9 @@ export const api = axios.create({
   withCredentials: true, // send the httpOnly session cookie set by the API
 });
 
+/* absolute URL of an API path, for browser-loaded resources like <img src> (the session cookie goes along) */
+export const apiUrl = (path: string) => `${api.defaults.baseURL}${path}`;
+
 export async function login(input: LoginInput): Promise<User> {
   return (await api.post<User>("/auth/login", input)).data;
 }

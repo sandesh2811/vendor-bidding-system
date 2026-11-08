@@ -5,11 +5,18 @@ import { VendorsService } from '../../vendors/vendors.service';
 
 const DEMO_PASSWORD = 'Vendor@12345';
 
+/* phones are unique, so other seeders (quotations) find the demo vendors by them */
+export const DEMO_VENDOR_PHONES = {
+  decor: '9800000001',
+  catering: '9800000002',
+  sound: '9800000003',
+} as const;
+
 const VENDORS: CreateVendorDto[] = [
   {
     name: 'Himalayan Decor',
     category: VendorCategory.Decor,
-    phone: '9800000001',
+    phone: DEMO_VENDOR_PHONES.decor,
     contactName: 'Sita Gurung',
     login: {
       name: 'Sita Gurung',
@@ -20,7 +27,7 @@ const VENDORS: CreateVendorDto[] = [
   {
     name: 'Kathmandu Caterers',
     category: VendorCategory.Catering,
-    phone: '9800000002',
+    phone: DEMO_VENDOR_PHONES.catering,
     contactName: 'Ram Shrestha',
     login: {
       name: 'Ram Shrestha',
@@ -31,7 +38,7 @@ const VENDORS: CreateVendorDto[] = [
   {
     name: 'Everest Sound',
     category: VendorCategory.Sound,
-    phone: '9800000003',
+    phone: DEMO_VENDOR_PHONES.sound,
     login: {
       name: 'Everest Sound',
       email: 'sound@vendor.test',

@@ -1,15 +1,14 @@
 "use client";
 
+import { OptionalHint } from "@/components/form/optional-hint";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CATEGORY_LABELS, VENDOR_CATEGORIES, type Vendor, type VendorDetails } from "./vendors.api";
+import { CATEGORY_LABELS, VENDOR_CATEGORIES, VENDOR_LIMITS } from "../../constants";
+import type { Vendor } from "../../types";
 
-/* limits mirror backend/src/common/constants.ts */
-export const NAME_MAX = 100;
-export const TEXT_MAX = 255;
-export const EMAIL_MAX = 254;
+const { NAME_MAX, TEXT_MAX, EMAIL_MAX } = VENDOR_LIMITS;
 
 /* business + internal fields shared by the create and edit forms; uncontrolled, read back with readVendorDetails */
 export function VendorDetailsFields({ vendor }: { vendor?: Vendor }) {
@@ -47,20 +46,20 @@ export function VendorDetailsFields({ vendor }: { vendor?: Vendor }) {
           <div className="grid gap-5 sm:grid-cols-2">
             <Field>
               <FieldLabel htmlFor="vendor-contact">
-                Contact person <span className="font-normal text-muted-foreground">(optional)</span>
+                Contact person <OptionalHint />
               </FieldLabel>
               <Input id="vendor-contact" name="contactName" maxLength={NAME_MAX} defaultValue={vendor?.contactName ?? ""} />
             </Field>
             <Field>
               <FieldLabel htmlFor="vendor-email">
-                Business email <span className="font-normal text-muted-foreground">(optional)</span>
+                Business email <OptionalHint />
               </FieldLabel>
               <Input id="vendor-email" name="email" type="email" maxLength={EMAIL_MAX} defaultValue={vendor?.email ?? ""} />
             </Field>
           </div>
           <Field>
             <FieldLabel htmlFor="vendor-address">
-              Address <span className="font-normal text-muted-foreground">(optional)</span>
+              Address <OptionalHint />
             </FieldLabel>
             <Input id="vendor-address" name="address" maxLength={TEXT_MAX} defaultValue={vendor?.address ?? ""} placeholder="Baneshwor, Kathmandu" />
           </Field>
@@ -81,20 +80,3 @@ export function VendorDetailsFields({ vendor }: { vendor?: Vendor }) {
   );
 }
 
-const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
-
-/* blank optional fields become null so an edit can clear them (the API skips validation for null) */
-export function readVendorDetails(form: FormData): VendorDetails {
-  const optional = (key: string) => text(form, key) || null;
-  return {
-    name: text(form, "name"),
-    category: text(form, "category") as VendorDetails["category"],
-    phone: text(form, "phone"),
-    contactName: optional("contactName"),
-    email: optional("email"),
-    address: optional("address"),
-    notes: optional("notes"),
-  };
-}
-
-export const readText = text;

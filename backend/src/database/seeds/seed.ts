@@ -7,11 +7,14 @@ import {
   NodeEnv,
 } from '../../config/env.validation';
 import { seedAdmin } from './admin.seed';
+import { seedQuotations } from './quotations.seed';
 import { seedVendors } from './vendors.seed';
 
 const SEEDERS: [string, (app: INestApplicationContext) => Promise<void>][] = [
   ['admin', seedAdmin],
   ['vendors', seedVendors],
+  /* after vendors: recipients reference them */
+  ['quotations', seedQuotations],
 ];
 
 const logger = new Logger('Seed');

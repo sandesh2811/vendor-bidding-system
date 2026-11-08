@@ -1,0 +1,58 @@
+"use client";
+
+import { SendIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { EmptyState } from "@/components/layout/empty-state";
+import { SectionCard } from "@/components/layout/section-card";
+import { Button } from "@/components/ui/button";
+import { CATEGORY_LABELS } from "@/features/vendors/constants";
+import { VendorIdentity } from "@/features/vendors/components/shared/vendor-identity";
+import { formatDate } from "@/lib/format";
+import type { QuotationRecipient } from "../../types";
+import { SendToVendorsDialog } from "./send-to-vendors-dialog";
+
+/* who has the quotation, most recent first, and the way to send it to more vendors */
+export function RecipientsCard({ quotationId, recipients }: { quotationId: string; recipients: QuotationRecipient[] }) {
+  const [sending, setSending] = useState(false);
+  const sentTo = useMemo(() => recipients.map((recipient) => recipient.vendorId), [recipients]);
+
+  const sendButton = (
+    <Button size="sm" variant={recipients.length ? "outline" : "default"} onClick={() => setSending(true)}>
+      <SendIcon data-icon="inline-start" />
+      Send
+    </Button>
+  );
+
+  return (
+    <>
+      <SectionCard
+        title="Vendors"
+        description={recipients.length ? `Sent to ${recipients.length}` : "Draft"}
+        action={recipients.length ? sendButton : undefined}
+      >
+        {recipients.length ? (
+          <ul className="-my-2 divide-y">
+            {recipients.map(({ id, vendor, sentAt }) => (
+              <li key={id} className="py-3">
+                <VendorIdentity name={vendor.name}>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {CATEGORY_LABELS[vendor.category]} · Sent {formatDate(sentAt)}
+                  </div>
+                </VendorIdentity>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            icon={SendIcon}
+            title="Not sent yet"
+            description="Choose vendors to ask for a price."
+            action={sendButton}
+            className="py-6"
+          />
+        )}
+      </SectionCard>
+      <SendToVendorsDialog quotationId={quotationId} sentTo={sentTo} open={sending} onOpenChange={setSending} />
+    </>
+  );
+}
