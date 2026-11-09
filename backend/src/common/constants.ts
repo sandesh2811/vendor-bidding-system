@@ -26,6 +26,11 @@ export const QUOTATION = {
   ITEM_NOTES_MAX_LENGTH: 1000,
 } as const;
 
+/* numeric(12,2): the largest unit price a column can hold; larger line totals are a 400 (PG 22003) */
+export const BID = {
+  MAX_UNIT_PRICE: 9_999_999_999.99,
+} as const;
+
 export const QUOTATION_PHOTO = {
   MAX_PER_QUOTATION: 10,
   MAX_BYTES: 5 * 1024 * 1024,
@@ -48,6 +53,7 @@ export const PG_ERROR_CODE = {
   FOREIGN_KEY_VIOLATION: '23503',
   CHECK_VIOLATION: '23514',
   NOT_NULL_VIOLATION: '23502',
+  NUMERIC_OUT_OF_RANGE: '22003',
 } as const;
 
 /* DB UNIQUE constraints with a domain message; others fall back to "<column> already exists" */
@@ -56,6 +62,22 @@ export const UNIQUE_CONSTRAINTS = {
     name: 'UQ_quotations_title_event_date_location',
     message:
       'A quotation with this title, event date and location already exists',
+  },
+  BID_QUOTATION_VENDOR: {
+    name: 'UQ_bids_quotation_vendor',
+    message: 'This vendor already has a bid on this quotation',
+  },
+  BID_ITEM: {
+    name: 'UQ_bid_items_bid_quotation_item',
+    message: 'Each item may be priced only once',
+  },
+  BOOKING_QUOTATION: {
+    name: 'UQ_bookings_quotation',
+    message: 'This quotation already has a booking',
+  },
+  BOOKING_BID: {
+    name: 'UQ_bookings_bid',
+    message: 'This bid already has a booking',
   },
 } as const;
 
@@ -72,6 +94,10 @@ export const CHECK_CONSTRAINTS = {
   ITEM_QUANTITY: {
     name: 'CHK_quotation_items_quantity_positive',
     message: 'quantity must be at least 1',
+  },
+  BID_UNIT_PRICE: {
+    name: 'CHK_bid_items_unit_price_non_negative',
+    message: 'unitPrice must be 0 or more',
   },
 } as const;
 
@@ -96,4 +122,24 @@ export enum EventType {
   Conference = 'conference',
   Concert = 'concert',
   Other = 'other',
+}
+
+export enum QuotationStatus {
+  Draft = 'draft',
+  Open = 'open',
+  Closed = 'closed',
+  Awarded = 'awarded',
+  Cancelled = 'cancelled',
+}
+
+export enum BidStatus {
+  Submitted = 'submitted',
+  Selected = 'selected',
+  Rejected = 'rejected',
+}
+
+export enum BookingStatus {
+  Confirmed = 'confirmed',
+  Completed = 'completed',
+  Cancelled = 'cancelled',
 }

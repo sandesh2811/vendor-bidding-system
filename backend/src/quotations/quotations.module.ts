@@ -9,7 +9,7 @@ import { QuotationsRepository } from './quotations.repository';
 import { QuotationsService } from './quotations.service';
 import { VendorQuotationsController } from './controllers/vendor-quotations.controller';
 import { LocalPhotoStorage } from './storage/local-photo.storage';
-import { PhotoStorage } from './storage/photo-storage';
+import { PHOTO_STORAGE } from './storage/photo-storage';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { PhotoStorage } from './storage/photo-storage';
     QuotationsRepository,
     QuotationsService,
     /* swap useClass for an object-storage adapter; nothing else changes */
-    { provide: PhotoStorage, useClass: LocalPhotoStorage },
+    { provide: PHOTO_STORAGE, useClass: LocalPhotoStorage },
   ],
 })
 export class QuotationsModule {}

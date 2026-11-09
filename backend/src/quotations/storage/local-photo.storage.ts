@@ -5,16 +5,15 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { EnvironmentVariables } from '../../config/env.validation';
-import { PhotoStorage, type StoredFile } from './photo-storage';
+import type { PhotoStorage, StoredFile } from './photo-storage';
 
 /* PhotoStorage on local disk: keys are paths under UPLOAD_DIR, e.g. quotations/<quotationId>/<sha256>.jpg */
 @Injectable()
-export class LocalPhotoStorage extends PhotoStorage {
+export class LocalPhotoStorage implements PhotoStorage {
   private readonly logger = new Logger(LocalPhotoStorage.name);
   private readonly root: string;
 
   constructor(config: ConfigService<EnvironmentVariables, true>) {
-    super();
     this.root = resolve(config.get('UPLOAD_DIR', { infer: true }));
   }
 

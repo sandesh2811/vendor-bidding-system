@@ -6,24 +6,23 @@ export interface StoredFile {
 }
 
 /**
- * Storage port for quotation photos, also the DI token.
+ * Storage port for quotation photos, injected with the PHOTO_STORAGE token.
  * LocalPhotoStorage keeps files on disk; an object-storage adapter (S3, R2, ...) only has to
- * implement these methods and be bound in QuotationsModule instead.
+ * implement this interface and be bound to PHOTO_STORAGE in QuotationsModule instead.
  */
-export abstract class PhotoStorage {
+export interface PhotoStorage {
   /* stable key for an image: the same bytes for the same quotation always map to one key */
-  abstract keyFor(
-    quotationId: string,
-    sha256: string,
-    extension: string,
-  ): string;
+  keyFor(quotationId: string, sha256: string, extension: string): string;
 
   /* must be atomic: a reader never sees a partially written object */
-  abstract save(key: string, data: Buffer): Promise<void>;
+  save(key: string, data: Buffer): Promise<void>;
 
   /* no error if the object is already gone */
-  abstract remove(key: string): Promise<void>;
+  remove(key: string): Promise<void>;
 
   /* null when the object doesn't exist */
-  abstract open(key: string): Promise<StoredFile | null>;
+  open(key: string): Promise<StoredFile | null>;
 }
+
+/* interfaces vanish at runtime, so DI needs a token of its own */
+export const PHOTO_STORAGE = Symbol('PhotoStorage');

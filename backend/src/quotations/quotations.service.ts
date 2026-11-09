@@ -1,11 +1,16 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { QUOTATION_PHOTO, UNIQUE_CONSTRAINTS } from '../common/constants';
+import {
+  type BidStatus,
+  QUOTATION_PHOTO,
+  UNIQUE_CONSTRAINTS,
+} from '../common/constants';
 import type { PaginationQueryDto } from '../common/dto/pagination.dto';
 import { sha256 } from '../common/hash';
 import { detectImageType } from '../common/image-type';
@@ -25,13 +30,19 @@ import type { QuotationPhoto } from './entities/quotation-photo.entity';
 import type { QuotationRecipient } from './entities/quotation-recipient.entity';
 import type { Quotation } from './entities/quotation.entity';
 import {
+  ItemsLockedError,
   type NewPhoto,
   PhotoLimitError,
+  QuotationStateError,
   QuotationsRepository,
   UnknownItemError,
   UnknownVendorsError,
 } from './quotations.repository';
-import { PhotoStorage, type StoredFile } from './storage/photo-storage';
+import {
+  PHOTO_STORAGE,
+  type PhotoStorage,
+  type StoredFile,
+} from './storage/photo-storage';
 
 export interface PhotoFile extends StoredFile {
   mimeType: string;
@@ -43,7 +54,7 @@ export class QuotationsService {
 
   constructor(
     private readonly quotations: QuotationsRepository,
-    private readonly storage: PhotoStorage,
+    @Inject(PHOTO_STORAGE) private readonly storage: PhotoStorage,
   ) {}
 
   /**
@@ -172,6 +183,7 @@ export class QuotationsService {
    * @returns {Promise<Quotation>} The updated quotation
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if no quotation has this id
    * @throws {BadRequestException} Throws a `BadRequestException` with HTTP status code 400 (Bad request) if an item id is repeated or belongs to another quotation, or the dates conflict
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation is awarded or cancelled, or `items` is sent while a bid exists
    *
    * @example
    * ```ts
@@ -213,11 +225,15 @@ export class QuotationsService {
   /**
    * Sends the quotation to more vendors. Idempotent: vendors who already have it are skipped.
    *
+   * @remarks
+   * - A draft becomes open; an open quotation stays open.
+   *
    * @param {string} id - Quotation id
    * @param {string[]} vendorIds - Vendors to add; each must exist and be active
    * @returns {Promise<Quotation>} The quotation with its full recipient list
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if no quotation has this id
    * @throws {BadRequestException} Throws a `BadRequestException` with HTTP status code 400 (Bad request) if any vendor is unknown or inactive (none are added)
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation is closed, awarded or cancelled
    *
    * @example
    * ```ts
@@ -239,6 +255,75 @@ export class QuotationsService {
       quotationId: id,
       requested: vendorIds.length,
       added: added.length,
+    });
+
+    return this.findById(id);
+  }
+
+  /**
+   * Closes an open quotation early: vendors can no longer submit or edit bids.
+   *
+   * @param {string} id - Quotation id
+   * @returns {Promise<Quotation>} The closed quotation
+   * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if no quotation has this id
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation isn't open
+   *
+   * @example
+   * ```ts
+   * await quotationsService.close(id);
+   * ```
+   */
+  async close(id: string): Promise<Quotation> {
+    const closed = await this.quotations.close(id);
+
+    if (closed === null) throw this.notFound('close', id);
+
+    if (!closed) {
+      this.logger.warn({
+        method: 'close',
+        message: 'Quotation not open',
+        quotationId: id,
+      });
+      throw new ConflictException('Only an open quotation can be closed');
+    }
+
+    this.logger.log({
+      method: 'close',
+      message: 'Quotation closed',
+      quotationId: id,
+    });
+
+    return this.findById(id);
+  }
+
+  /**
+   * Cancels a quotation and rejects every submitted bid on it.
+   *
+   * @remarks
+   * - One transaction under the quotation's row lock, so it can't race a bid submission or a selection.
+   * - Vendors still see the quotation, marked cancelled.
+   *
+   * @param {string} id - Quotation id
+   * @returns {Promise<Quotation>} The cancelled quotation
+   * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if no quotation has this id
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if it is already awarded or cancelled
+   *
+   * @example
+   * ```ts
+   * await quotationsService.cancel(id);
+   * ```
+   */
+  async cancel(id: string): Promise<Quotation> {
+    const cancelled = await this.quotations
+      .cancel(id)
+      .catch((error: unknown) => this.rethrowDomainError(error, 'cancel'));
+
+    if (!cancelled) throw this.notFound('cancel', id);
+
+    this.logger.log({
+      method: 'cancel',
+      message: 'Quotation cancelled',
+      quotationId: id,
     });
 
     return this.findById(id);
@@ -365,7 +450,7 @@ export class QuotationsService {
    *
    * @param {string} vendorId - The logged-in vendor (from the session, never the request)
    * @param {PaginationQueryDto} page - page and limit
-   * @returns {Promise<Paginated<ReceivedQuotationDto>>} Quotations with `receivedAt`, without other recipients
+   * @returns {Promise<Paginated<ReceivedQuotationDto>>} Quotations with `receivedAt` and `bidStatus`, without other recipients
    *
    * @example
    * ```ts
@@ -383,6 +468,11 @@ export class QuotationsService {
       take,
     );
 
+    const bidStatuses = await this.quotations.findBidStatuses(
+      vendorId,
+      rows.map((row) => row.quotationId),
+    );
+
     this.logger.debug({
       method: 'findReceived',
       message: 'Listed received quotations',
@@ -391,7 +481,11 @@ export class QuotationsService {
       total,
     });
 
-    return toPaginated(rows.map(toReceived), total, page);
+    return toPaginated(
+      rows.map((row) => toReceived(row, bidStatuses.get(row.quotationId))),
+      total,
+      page,
+    );
   }
 
   /**
@@ -402,7 +496,7 @@ export class QuotationsService {
    *
    * @param {string} vendorId - The logged-in vendor
    * @param {string} id - Quotation id
-   * @returns {Promise<ReceivedQuotationDto>} The quotation with `receivedAt`
+   * @returns {Promise<ReceivedQuotationDto>} The quotation with `receivedAt` and `bidStatus`
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if it wasn't sent to this vendor
    *
    * @example
@@ -418,7 +512,9 @@ export class QuotationsService {
 
     if (!row) throw this.notFound('findReceivedById', id);
 
-    return toReceived(row);
+    const bidStatuses = await this.quotations.findBidStatuses(vendorId, [id]);
+
+    return toReceived(row, bidStatuses.get(id));
   }
 
   /**
@@ -492,6 +588,16 @@ export class QuotationsService {
         `Item ${error.itemId} does not belong to this quotation`,
       );
 
+    if (error instanceof QuotationStateError) {
+      this.logger.warn({ method, message: error.message });
+      throw new ConflictException(error.message);
+    }
+
+    if (error instanceof ItemsLockedError)
+      throw new ConflictException(
+        'Items can no longer change because vendors have bid on them. Cancel this quotation and create a new one instead',
+      );
+
     if (error instanceof PhotoLimitError)
       throw new BadRequestException(
         `A quotation can have at most ${error.limit} photos`,
@@ -506,8 +612,12 @@ export class QuotationsService {
   }
 }
 
-/* keep the Quotation entity instance (so @Exclude/@Expose still apply) and add receivedAt */
-const toReceived = (recipient: QuotationRecipient): ReceivedQuotationDto =>
+/* keep the Quotation entity instance (so @Exclude/@Expose still apply) and add receivedAt and bidStatus */
+const toReceived = (
+  recipient: QuotationRecipient,
+  bidStatus: BidStatus | undefined,
+): ReceivedQuotationDto =>
   Object.assign(recipient.quotation as Quotation, {
     receivedAt: recipient.sentAt,
+    bidStatus: bidStatus ?? null,
   });

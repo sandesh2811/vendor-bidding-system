@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { PageTitle } from "@/components/layout/page-header";
 import { QueryBoundary } from "@/components/layout/query-boundary";
+import { BidFormCard } from "@/features/bids/components/vendor/bid-form-card";
+import { RequestStatusBadge } from "@/features/bids/components/vendor/request-status-badge";
 import { formatDate } from "@/lib/format";
 import { receivedPhotoUrl, receivedQuotationQuery } from "../../api/received-quotations.api";
 import { EventTypeBadge } from "../shared/event-type-badge";
@@ -10,7 +12,7 @@ import { PhotosSection } from "../shared/photos-section";
 import { QuotationOverview } from "../shared/quotation-overview";
 import { QuotationSkeleton } from "../shared/quotation-skeleton";
 
-/* one request as the vendor sees it: event, items and photos (read-only) */
+/* one request as the vendor sees it: event, items and photos (read-only), then the vendor's bid */
 export function ReceivedQuotationView({ id }: { id: string }) {
   const query = useQuery(receivedQuotationQuery(id));
 
@@ -20,7 +22,12 @@ export function ReceivedQuotationView({ id }: { id: string }) {
         <>
           <PageTitle
             title={quotation.title}
-            badge={<EventTypeBadge eventType={quotation.eventType} />}
+            badge={
+              <>
+                <RequestStatusBadge quotation={quotation} />
+                <EventTypeBadge eventType={quotation.eventType} />
+              </>
+            }
             description={`Received ${formatDate(quotation.receivedAt)}`}
             back={{ href: "/vendor", label: "Back to requests" }}
             className="px-0 pt-0 pb-6"
@@ -34,6 +41,7 @@ export function ReceivedQuotationView({ id }: { id: string }) {
                 name: photo.originalName,
               }))}
             />
+            <BidFormCard quotation={quotation} />
           </div>
         </>
       )}

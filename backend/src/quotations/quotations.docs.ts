@@ -77,7 +77,7 @@ export const QuotationsDocs = {
       }),
       ApiConflictResponse({
         description:
-          'Another quotation has this title, event date and location',
+          'Another quotation has this title, event date and location; the quotation is awarded or cancelled; or items changed after a bid',
       }),
       ApiNotFoundResponse({ description: 'Quotation not found' }),
     ),
@@ -90,6 +90,31 @@ export const QuotationsDocs = {
       }),
       ApiOkResponse({ type: Quotation }),
       ApiBadRequestResponse({ description: 'Unknown or inactive vendor' }),
+      ApiConflictResponse({
+        description: 'Quotation is closed, awarded or cancelled',
+      }),
+      ApiNotFoundResponse({ description: 'Quotation not found' }),
+    ),
+
+  close: () =>
+    applyDecorators(
+      ApiOperation({
+        summary: 'Close an open quotation early (no more bids or edits)',
+      }),
+      ApiOkResponse({ type: Quotation }),
+      ApiConflictResponse({ description: 'Quotation is not open' }),
+      ApiNotFoundResponse({ description: 'Quotation not found' }),
+    ),
+
+  cancel: () =>
+    applyDecorators(
+      ApiOperation({
+        summary: 'Cancel a quotation and reject every submitted bid',
+      }),
+      ApiOkResponse({ type: Quotation }),
+      ApiConflictResponse({
+        description: 'Quotation is already awarded or cancelled',
+      }),
       ApiNotFoundResponse({ description: 'Quotation not found' }),
     ),
 

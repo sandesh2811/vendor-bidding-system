@@ -86,6 +86,20 @@ export class QuotationsController {
     return this.quotations.addRecipients(id, vendorIds);
   }
 
+  @Post(':id/close')
+  @HttpCode(HttpStatus.OK)
+  @QuotationsDocs.close()
+  close(@Param() { id }: IdParamDto): Promise<Quotation> {
+    return this.quotations.close(id);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @QuotationsDocs.cancel()
+  cancel(@Param() { id }: IdParamDto): Promise<Quotation> {
+    return this.quotations.cancel(id);
+  }
+
   /* memory storage: files are validated (size, magic number) before anything touches the disk */
   @Post(':id/photos')
   @UseInterceptors(

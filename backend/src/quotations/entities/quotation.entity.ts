@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer';
 import {
+  AfterLoad,
   Check,
   Column,
   CreateDateColumn,
@@ -15,13 +16,27 @@ import {
 import {
   CHECK_CONSTRAINTS,
   EventType,
+  QuotationStatus,
   UNIQUE_CONSTRAINTS,
   UserRole,
 } from '../../common/constants';
+import { businessToday } from '../../common/validators/is-not-past-date.validator';
 import { User } from '../../users/entities/user.entity';
 import { QuotationItem } from './quotation-item.entity';
 import { QuotationPhoto } from './quotation-photo.entity';
 import { QuotationRecipient } from './quotation-recipient.entity';
+
+/* an open quotation past its deadline counts as closed; no job writes that, every read and write derives it */
+export const effectiveStatus = (
+  status: QuotationStatus,
+  responseDeadline: string | null,
+  today: string = businessToday(),
+): QuotationStatus =>
+  status === QuotationStatus.Open &&
+  responseDeadline !== null &&
+  responseDeadline < today
+    ? QuotationStatus.Closed
+    : status;
 
 /* an event work request Mero Event sends to one or more vendors for pricing */
 @Entity('quotations')
@@ -66,6 +81,13 @@ export class Quotation {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
+  @Column({
+    type: 'enum',
+    enum: QuotationStatus,
+    default: QuotationStatus.Draft,
+  })
+  status: QuotationStatus;
+
   /* internal: serialized only on admin routes */
   @Expose({ groups: [UserRole.Admin] })
   @Column({ type: 'uuid' })
@@ -89,4 +111,11 @@ export class Quotation {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
+
+  /* responses report the effective status; locked write paths read the raw columns instead */
+  @AfterLoad()
+  protected applyDeadline(): void {
+    if (this.status)
+      this.status = effectiveStatus(this.status, this.responseDeadline ?? null);
+  }
 }

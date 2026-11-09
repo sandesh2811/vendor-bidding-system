@@ -4,6 +4,7 @@ import { type ColumnClasses, columnHelper } from "@/components/data-table/table-
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDay } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
+import { RequestStatusBadge } from "@/features/bids/components/vendor/request-status-badge";
 import type { ReceivedQuotation } from "../../types";
 import { DeadlineHint } from "../shared/deadline-hint";
 import { EventTypeBadge } from "../shared/event-type-badge";
@@ -37,6 +38,11 @@ export const receivedColumns = helper.columns([
         </div>
       </div>
     ),
+  }),
+  helper.display({
+    id: "status",
+    header: "Status",
+    cell: ({ row: { original: quotation } }) => <RequestStatusBadge quotation={quotation} />,
   }),
   helper.accessor("eventType", {
     header: "Type",

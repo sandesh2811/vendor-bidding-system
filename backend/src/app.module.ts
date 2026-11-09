@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { BidsModule } from './bids/bids.module';
 import { UserContextMiddleware } from './auth/user-context.middleware';
 import { API_DEFAULT_VERSION } from './common/constants';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
@@ -34,6 +35,7 @@ import { VendorsModule } from './vendors/vendors.module';
     AuthModule,
     VendorsModule,
     QuotationsModule,
+    BidsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: DatabaseExceptionFilter }],
 })

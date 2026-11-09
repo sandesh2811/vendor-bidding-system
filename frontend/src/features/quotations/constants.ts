@@ -30,3 +30,17 @@ export const PHOTO_LIMITS = {
   /* the server re-checks the file's bytes; this only gives early feedback */
   TYPES: ["image/jpeg", "image/png", "image/webp"],
 } as const;
+
+/* mirrors QuotationStatus and BidStatus in backend/src/common/constants.ts */
+export const QUOTATION_STATUSES = ["draft", "open", "closed", "awarded", "cancelled"] as const;
+export type QuotationStatus = (typeof QUOTATION_STATUSES)[number];
+
+export const QUOTATION_STATUS_LABELS: Record<QuotationStatus, string> = {
+  draft: "Draft",
+  open: "Open",
+  closed: "Closed",
+  awarded: "Awarded",
+  cancelled: "Cancelled",
+};
+
+export type BidStatus = "submitted" | "selected" | "rejected";

@@ -9,3 +9,8 @@ export const initials = (name: string) =>
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase())
     .join("");
+
+const moneyFormat = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* NPR; the API sends amounts as decimal strings */
+export const formatMoney = (amount: string | number) => `Rs ${moneyFormat.format(Number(amount))}`;
