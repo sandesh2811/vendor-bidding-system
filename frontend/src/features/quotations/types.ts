@@ -1,5 +1,5 @@
 import type { Vendor } from "@/features/vendors/types";
-import type { EventType } from "./constants";
+import type { BidStatus, EventType, QuotationStatus } from "./constants";
 
 export interface QuotationItem {
   id: string;
@@ -36,6 +36,8 @@ export interface QuotationEvent {
   guestCount: number | null;
   responseDeadline: string | null;
   description: string | null;
+  /* effective: an open quotation past its deadline comes back as closed */
+  status: QuotationStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +57,8 @@ export type QuotationDetail = Quotation & QuotationContents;
 /* vendor portal: a quotation as one recipient sees it, without the other recipients */
 export interface ReceivedQuotation extends QuotationEvent {
   receivedAt: string;
+  /* this vendor's own bid, null until it bids */
+  bidStatus: BidStatus | null;
 }
 
 export type ReceivedQuotationDetail = ReceivedQuotation & QuotationContents;

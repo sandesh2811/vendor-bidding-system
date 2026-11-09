@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
-import { EventType, NAME_MAX_LENGTH } from '../../common/constants';
+import { BidStatus, EventType, NAME_MAX_LENGTH } from '../../common/constants';
 import {
   PaginationMetaDto,
   PaginationQueryDto,
@@ -30,6 +30,10 @@ export class QuotationPageDto {
 export class ReceivedQuotationDto extends Quotation {
   @ApiProperty()
   receivedAt: Date;
+
+  /* this vendor's own bid, null until it bids */
+  @ApiProperty({ enum: BidStatus, nullable: true })
+  bidStatus: BidStatus | null;
 }
 
 export class ReceivedQuotationPageDto {

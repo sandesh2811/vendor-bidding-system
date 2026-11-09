@@ -39,6 +39,15 @@ export async function addRecipients(id: string, vendorIds: string[]): Promise<Qu
   return (await api.post<QuotationDetail>(`/quotations/${id}/recipients`, { vendorIds })).data;
 }
 
+export async function closeQuotation(id: string): Promise<QuotationDetail> {
+  return (await api.post<QuotationDetail>(`/quotations/${id}/close`)).data;
+}
+
+/* also rejects every submitted bid */
+export async function cancelQuotation(id: string): Promise<QuotationDetail> {
+  return (await api.post<QuotationDetail>(`/quotations/${id}/cancel`)).data;
+}
+
 /* idempotent per image: the same file uploaded twice is stored once */
 export async function uploadPhotos(id: string, files: File[]): Promise<QuotationPhoto[]> {
   const body = new FormData();

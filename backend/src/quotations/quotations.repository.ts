@@ -4,13 +4,23 @@ import {
   type EntityManager,
   type FindOptionsWhere,
   ILike,
+  In,
+  IsNull,
+  MoreThanOrEqual,
+  Not,
   type Repository,
 } from 'typeorm';
-import type { EventType } from '../common/constants';
+import { Bid } from '../bids/entities/bid.entity';
+import {
+  BidStatus,
+  type EventType,
+  QuotationStatus,
+} from '../common/constants';
 import { QuotationItem } from './entities/quotation-item.entity';
 import { QuotationPhoto } from './entities/quotation-photo.entity';
 import { QuotationRecipient } from './entities/quotation-recipient.entity';
 import { Quotation } from './entities/quotation.entity';
+import { businessToday } from '../common/validators/is-not-past-date.validator';
 
 export type NewQuotation = Pick<
   Quotation,
@@ -60,6 +70,16 @@ export class PhotoLimitError extends Error {
     super('Photo limit reached');
   }
 }
+/* the quotation's status doesn't allow this action; mapped to 409 with this message */
+export class QuotationStateError extends Error {}
+/* vendors have priced the items, so the list can't change; mapped to 409 */
+export class ItemsLockedError extends Error {
+  constructor() {
+    super('Items are locked once a bid exists');
+  }
+}
+
+const FINAL_STATUSES = [QuotationStatus.Awarded, QuotationStatus.Cancelled];
 
 @Injectable()
 export class QuotationsRepository {
@@ -82,7 +102,12 @@ export class QuotationsRepository {
         .createQueryBuilder()
         .insert()
         .into(Quotation)
-        .values(quotation)
+        .values({
+          ...quotation,
+          status: vendorIds.length
+            ? QuotationStatus.Open
+            : QuotationStatus.Draft,
+        })
         .orIgnore()
         .returning(this.returningColumns())
         .execute();
@@ -110,13 +135,25 @@ export class QuotationsRepository {
     return this.repo.manager.transaction(async (manager) => {
       if (!(await this.lock(manager, id, 'pessimistic_write'))) return false;
 
-      /* bumps updated_at even for an items-only edit */
-      await manager
+      /* priced items can't change; the RESTRICT FK on bid_items also refuses deleting one */
+      if (items && (await manager.existsBy(Bid, { quotationId: id })))
+        throw new ItemsLockedError();
+
+      /* conditional: an awarded or cancelled quotation matches nothing. Bumps updated_at even for an items-only edit */
+      const result = await manager
         .createQueryBuilder()
         .update(Quotation)
         .set({ ...changes, updatedAt: () => 'now()' })
-        .where('id = :id', { id })
+        .where('id = :id AND status NOT IN (:...final)', {
+          id,
+          final: FINAL_STATUSES,
+        })
         .execute();
+
+      if (!result.affected)
+        throw new QuotationStateError(
+          'An awarded or cancelled quotation can no longer be edited',
+        );
 
       if (items) await this.reconcileItems(manager, id, items);
 
@@ -125,18 +162,84 @@ export class QuotationsRepository {
   }
 
   /**
-   * Sends the quotation to more vendors. Idempotent: vendors already on it are skipped by the
-   * unique (quotation_id, vendor_id). Returns null if the quotation doesn't exist.
+   * Sends the quotation to more vendors and opens a draft. Idempotent: vendors already on it are
+   * skipped by the unique (quotation_id, vendor_id), and an open quotation stays open.
+   * The conditional UPDATE is both the status check (draft, or open and before its deadline) and
+   * the transition. Returns null if the quotation doesn't exist.
    */
   addRecipients(
     quotationId: string,
     vendorIds: string[],
   ): Promise<string[] | null> {
     return this.repo.manager.transaction(async (manager) => {
-      if (!(await this.lock(manager, quotationId, 'pessimistic_read')))
-        return null;
+      const opened = await manager.update(
+        Quotation,
+        [
+          { id: quotationId, status: QuotationStatus.Draft },
+          {
+            id: quotationId,
+            status: QuotationStatus.Open,
+            responseDeadline: IsNull(),
+          },
+          {
+            id: quotationId,
+            status: QuotationStatus.Open,
+            responseDeadline: MoreThanOrEqual(businessToday()),
+          },
+        ],
+        { status: QuotationStatus.Open },
+      );
+
+      if (!opened.affected) {
+        if (!(await manager.existsBy(Quotation, { id: quotationId })))
+          return null;
+        throw new QuotationStateError(
+          'A closed, awarded or cancelled quotation can no longer be sent',
+        );
+      }
 
       return this.insertRecipients(manager, quotationId, vendorIds);
+    });
+  }
+
+  /* single conditional UPDATE: true if closed, false if it exists but isn't open, null if missing */
+  async close(id: string): Promise<boolean | null> {
+    const result = await this.repo.update(
+      { id, status: QuotationStatus.Open },
+      { status: QuotationStatus.Closed },
+    );
+
+    if (result.affected) return true;
+
+    return (await this.repo.existsBy({ id })) ? false : null;
+  }
+
+  /**
+   * Cancels the quotation and rejects its submitted bids in one transaction. Returns false if it
+   * doesn't exist; throws QuotationStateError if it is already awarded or cancelled.
+   */
+  cancel(id: string): Promise<boolean> {
+    return this.repo.manager.transaction(async (manager) => {
+      const cancelled = await manager.update(
+        Quotation,
+        { id, status: Not(In(FINAL_STATUSES)) },
+        { status: QuotationStatus.Cancelled },
+      );
+
+      if (!cancelled.affected) {
+        if (!(await manager.existsBy(Quotation, { id }))) return false;
+        throw new QuotationStateError(
+          'This quotation is already awarded or cancelled',
+        );
+      }
+
+      await manager.update(
+        Bid,
+        { quotationId: id, status: BidStatus.Submitted },
+        { status: BidStatus.Rejected },
+      );
+
+      return true;
     });
   }
 
@@ -329,11 +432,26 @@ export class QuotationsRepository {
       .getOne();
   }
 
-  /* SELECT ... FOR UPDATE / FOR SHARE on the quotation row; false if it doesn't exist */
+  /* this vendor's bid status per quotation id; quotations without a bid are absent */
+  async findBidStatuses(
+    vendorId: string,
+    quotationIds: string[],
+  ): Promise<Map<string, BidStatus>> {
+    if (!quotationIds.length) return new Map();
+
+    const bids = await this.repo.manager.find(Bid, {
+      where: { vendorId, quotationId: In(quotationIds) },
+      select: { quotationId: true, status: true },
+    });
+
+    return new Map(bids.map((bid) => [bid.quotationId, bid.status]));
+  }
+
+  /* SELECT ... FOR UPDATE on the quotation row; false if it doesn't exist */
   private async lock(
     manager: EntityManager,
     id: string,
-    mode: 'pessimistic_write' | 'pessimistic_read',
+    mode: 'pessimistic_write',
   ): Promise<boolean> {
     const row = await manager.findOne(Quotation, {
       where: { id },

@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/format";
 import type { Quotation } from "../../types";
 import { DeadlineHint } from "../shared/deadline-hint";
 import { EventTypeBadge } from "../shared/event-type-badge";
+import { QuotationStatusBadge } from "../shared/quotation-status-badge";
 import { RecipientCount } from "../shared/recipient-count";
 
 const helper = columnHelper<Quotation>();
@@ -40,6 +41,10 @@ export const quotationColumns = helper.columns([
         </div>
       </div>
     ),
+  }),
+  helper.accessor("status", {
+    header: "Status",
+    cell: ({ getValue }) => <QuotationStatusBadge status={getValue()} />,
   }),
   helper.accessor("eventType", {
     header: "Type",

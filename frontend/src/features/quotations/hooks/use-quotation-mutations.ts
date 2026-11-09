@@ -1,5 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addRecipients, quotationKeys, removePhoto, updateQuotation, uploadPhotos } from "../api/quotations.api";
+import { bidKeys } from "@/features/bids/api/bids.api";
+import {
+  addRecipients,
+  cancelQuotation,
+  closeQuotation,
+  quotationKeys,
+  removePhoto,
+  updateQuotation,
+  uploadPhotos,
+} from "../api/quotations.api";
 import type { QuotationDetail, UpdateQuotationInput } from "../types";
 
 /* writes that return the full quotation put it straight into the detail cache; lists refetch for counts and order */
@@ -43,5 +52,23 @@ export function useRemovePhoto(id: string) {
   return useMutation({
     mutationFn: (photoId: string) => removePhoto(id, photoId),
     onSuccess: cache.refresh,
+  });
+}
+
+export function useCloseQuotation(id: string) {
+  const cache = useQuotationCache(id);
+  return useMutation({
+    mutationFn: () => closeQuotation(id),
+    onSuccess: cache.store,
+  });
+}
+
+export function useCancelQuotation(id: string) {
+  const cache = useQuotationCache(id);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => cancelQuotation(id),
+    onSuccess: (detail) =>
+      Promise.all([cache.store(detail), queryClient.invalidateQueries({ queryKey: bidKeys.forQuotation(id) })]),
   });
 }

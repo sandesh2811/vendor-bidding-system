@@ -11,8 +11,16 @@ import { formatDate } from "@/lib/format";
 import type { QuotationRecipient } from "../../types";
 import { SendToVendorsDialog } from "./send-to-vendors-dialog";
 
-/* who has the quotation, most recent first, and the way to send it to more vendors */
-export function RecipientsCard({ quotationId, recipients }: { quotationId: string; recipients: QuotationRecipient[] }) {
+/* who has the quotation, most recent first, and the way to send it to more vendors (only while draft or open) */
+export function RecipientsCard({
+  quotationId,
+  recipients,
+  canSend,
+}: {
+  quotationId: string;
+  recipients: QuotationRecipient[];
+  canSend: boolean;
+}) {
   const [sending, setSending] = useState(false);
   const sentTo = useMemo(() => recipients.map((recipient) => recipient.vendorId), [recipients]);
 
@@ -28,7 +36,7 @@ export function RecipientsCard({ quotationId, recipients }: { quotationId: strin
       <SectionCard
         title="Vendors"
         description={recipients.length ? `Sent to ${recipients.length}` : "Draft"}
-        action={recipients.length ? sendButton : undefined}
+        action={recipients.length && canSend ? sendButton : undefined}
       >
         {recipients.length ? (
           <ul className="-my-2 divide-y">
@@ -46,8 +54,8 @@ export function RecipientsCard({ quotationId, recipients }: { quotationId: strin
           <EmptyState
             icon={SendIcon}
             title="Not sent yet"
-            description="Choose vendors to ask for a price."
-            action={sendButton}
+            description={canSend ? "Choose vendors to ask for a price." : "This quotation was never sent."}
+            action={canSend ? sendButton : undefined}
             className="py-6"
           />
         )}

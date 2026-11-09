@@ -72,6 +72,14 @@ export class DatabaseException extends HttpException {
           code,
         );
 
+      /* e.g. a bid line total (unit price × quantity) beyond numeric(12,2) */
+      case PG_ERROR_CODE.NUMERIC_OUT_OF_RANGE:
+        return new DatabaseException(
+          HttpStatus.BAD_REQUEST,
+          'Amount is too large',
+          code,
+        );
+
       default:
         return new DatabaseException(
           HttpStatus.INTERNAL_SERVER_ERROR,
