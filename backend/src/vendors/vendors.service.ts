@@ -14,6 +14,7 @@ import { UsersService } from '../users/users.service';
 import type { CreateVendorDto } from './dto/create-vendor.dto';
 import type { ListVendorsQueryDto } from './dto/list-vendors.dto';
 import type { UpdateVendorDto } from './dto/update-vendor.dto';
+import type { VendorSummaryDto } from './dto/vendor-summary.dto';
 import type { Vendor } from './entities/vendor.entity';
 import { VendorsRepository } from './vendors.repository';
 
@@ -25,6 +26,29 @@ export class VendorsService {
     private readonly vendors: VendorsRepository,
     private readonly users: UsersService,
   ) {}
+
+  /**
+   * Counts what needs the vendor's attention, for the portal home.
+   *
+   * @param {string} vendorId - The logged-in vendor (from the session, never the request)
+   * @returns {Promise<VendorSummaryDto>} New requests (open, no bid, not declined), bids in progress, upcoming (confirmed) bookings
+   *
+   * @example
+   * ```ts
+   * const { newRequests } = await vendorsService.summary(vendor.id);
+   * ```
+   */
+  async summary(vendorId: string): Promise<VendorSummaryDto> {
+    const summary = await this.vendors.summary(vendorId);
+
+    this.logger.debug({
+      method: 'summary',
+      message: 'Vendor summary',
+      summary,
+    });
+
+    return summary;
+  }
 
   /**
    * Creates a vendor and its one-to-one portal login. Idempotent on phone.

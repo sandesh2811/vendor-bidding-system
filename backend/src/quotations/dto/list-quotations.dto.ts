@@ -1,7 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
-import { BidStatus, EventType, NAME_MAX_LENGTH } from '../../common/constants';
+import {
+  BidStatus,
+  EventType,
+  NAME_MAX_LENGTH,
+  QuotationStatus,
+} from '../../common/constants';
 import {
   PaginationMetaDto,
   PaginationQueryDto,
@@ -19,10 +24,21 @@ export class ListQuotationsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(EventType)
   eventType?: EventType;
+
+  /* effective status: an open quotation past its deadline counts as closed */
+  @IsOptional()
+  @IsEnum(QuotationStatus)
+  status?: QuotationStatus;
+}
+
+/* an admin list row: the quotation plus how many vendors have bid on it */
+export class ListedQuotationDto extends Quotation {
+  @ApiProperty()
+  bidCount: number;
 }
 
 export class QuotationPageDto {
-  items: Quotation[];
+  items: ListedQuotationDto[];
   meta: PaginationMetaDto;
 }
 
@@ -34,6 +50,13 @@ export class ReceivedQuotationDto extends Quotation {
   /* this vendor's own bid, null until it bids */
   @ApiProperty({ enum: BidStatus, nullable: true })
   bidStatus: BidStatus | null;
+
+  /* this vendor's own invitation: first opened, and declined (null if not) */
+  @ApiProperty({ nullable: true })
+  viewedAt: Date | null;
+
+  @ApiProperty({ nullable: true })
+  declinedAt: Date | null;
 }
 
 export class ReceivedQuotationPageDto {

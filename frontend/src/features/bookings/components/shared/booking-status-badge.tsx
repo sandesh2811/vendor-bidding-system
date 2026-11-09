@@ -10,7 +10,7 @@ const STATUS_DOT: Record<BookingStatus, string> = {
 
 const PAYMENT_DOT: Record<PaymentStatus, string> = {
   unpaid: "bg-muted-foreground/40",
-  partial: "bg-amber-500",
+  partial: "bg-warning",
   paid: "bg-success",
 };
 

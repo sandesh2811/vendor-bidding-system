@@ -22,26 +22,32 @@ Mero Event admins create event work requests (event details, line items, referen
   - A selected bid sets `awarded` (bids module).
 - **Edit locks**:
   - `PATCH` gives 409 on `awarded` or `cancelled`. The status sits in the `UPDATE`'s `WHERE`.
-  - `PATCH` gives 409 on `items` once any bid exists. Details and the deadline stay editable.
+  - Once sent (`open` or `closed`), `PATCH` accepts only `responseDeadline`; anything else (or `items`) gives 409. A draft-only edit uses `WHERE status = 'draft'`, so the check and the write are one statement.
+  - Photos can be deleted only from a draft (checked under the row lock the delete already takes). Uploads aren't restricted.
   - Sending more recipients gives 409 unless the quotation is `draft` or `open` before its deadline.
-  - The RESTRICT FK from `bid_items` to `quotation_items` makes deleting a priced item fail even if the bid check races a first bid.
+- **Invitations** (`quotation_recipients`):
+  - `viewed_at` is set by the vendor's first `GET /vendor/quotations/:id` (conditional `UPDATE … WHERE viewed_at IS NULL`).
+  - `POST /vendor/quotations/:id/decline` sets `declined_at` and `decline_reason`, only while open and before the vendor bids; repeating it keeps the first decline. A declined vendor can't bid.
+  - Sending to a vendor that declined clears the decline (`ON CONFLICT … DO UPDATE … WHERE declined_at IS NOT NULL`).
+- **Admin list**: `?status=` filters by the effective status (an open quotation past its deadline is `closed`), and each row carries `bidCount`.
 
 ## Endpoints (`/api/v1`)
 
 | Method | Path                                     | Who    | Notes                                                   |
 | ------ | ---------------------------------------- | ------ | ------------------------------------------------------- |
 | POST   | `/quotations`                            | admin  | `vendorIds` optional (draft)                            |
-| GET    | `/quotations`                            | admin  | `page`, `limit`, `search` (title/location), `eventType` |
+| GET    | `/quotations`                            | admin  | `page`, `limit`, `search` (title/location), `eventType`, `status`; rows have `bidCount` |
 | GET    | `/quotations/:id`                        | admin  | items, photos, recipients                               |
-| PATCH  | `/quotations/:id`                        | admin  | partial fields; `items` = full list                     |
+| PATCH  | `/quotations/:id`                        | admin  | draft: partial fields, `items` = full list; sent: `responseDeadline` only |
 | POST   | `/quotations/:id/recipients`             | admin  | `{ vendorIds }`, idempotent; opens a draft              |
 | POST   | `/quotations/:id/close`                  | admin  | `open` → `closed`                                       |
 | POST   | `/quotations/:id/cancel`                 | admin  | rejects submitted bids                                  |
 | POST   | `/quotations/:id/photos`                 | admin  | multipart field `photos` (1–10 files)                   |
-| DELETE | `/quotations/:id/photos/:photoId`        | admin  | 204                                                     |
+| DELETE | `/quotations/:id/photos/:photoId`        | admin  | 204; drafts only (409)                                  |
 | GET    | `/quotations/:id/photos/:photoId`        | admin  | image bytes                                             |
-| GET    | `/vendor/quotations`                     | vendor | received requests with `receivedAt`, `bidStatus`        |
-| GET    | `/vendor/quotations/:id`                 | vendor | 404 unless sent to this vendor                          |
+| GET    | `/vendor/quotations`                     | vendor | received requests with `receivedAt`, `bidStatus`, `viewedAt`, `declinedAt` |
+| GET    | `/vendor/quotations/:id`                 | vendor | 404 unless sent to this vendor; first open marks it viewed |
+| POST   | `/vendor/quotations/:id/decline`         | vendor | `{ reason? }`; idempotent                               |
 | GET    | `/vendor/quotations/:id/photos/:photoId` | vendor | 404 unless sent to this vendor                          |
 
 Suggested client flow: create without `vendorIds`, upload photos, then `POST /recipients`. Vendors never see a request before its photos are attached.

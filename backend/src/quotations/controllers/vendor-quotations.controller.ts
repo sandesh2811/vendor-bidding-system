@@ -1,10 +1,21 @@
-import { Controller, Get, Param, Query, StreamableFile } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  StreamableFile,
+} from '@nestjs/common';
 import { Auth, CurrentVendor } from '../../auth/auth.decorators';
 import { UserRole } from '../../common/constants';
 import { IdParamDto } from '../../common/dto/id-param.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 import type { Paginated } from '../../common/pagination.helper';
 import type { Vendor } from '../../vendors/entities/vendor.entity';
+import { DeclineQuotationDto } from '../dto/decline-quotation.dto';
 import type { ReceivedQuotationDto } from '../dto/list-quotations.dto';
 import { PhotoParamDto } from '../dto/photo-param.dto';
 import { toStreamableFile } from './photo-response';
@@ -34,6 +45,17 @@ export class VendorQuotationsController {
     @Param() { id }: IdParamDto,
   ): Promise<ReceivedQuotationDto> {
     return this.quotations.findReceivedById(vendor.id, id);
+  }
+
+  @Post(':id/decline')
+  @HttpCode(HttpStatus.OK)
+  @VendorQuotationsDocs.decline()
+  decline(
+    @CurrentVendor() vendor: Vendor,
+    @Param() { id }: IdParamDto,
+    @Body() { reason = null }: DeclineQuotationDto,
+  ): Promise<ReceivedQuotationDto> {
+    return this.quotations.decline(vendor.id, id, reason || null);
   }
 
   @Get(':id/photos/:photoId')

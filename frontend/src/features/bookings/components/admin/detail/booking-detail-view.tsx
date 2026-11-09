@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { EventFacts } from "@/features/quotations/components/shared/event-facts";
 import { useRetainedValue } from "@/hooks/use-retained-value";
 import { formatDate, formatMoney } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { bookingQuery } from "../../../api/bookings.api";
 import { useDeletePayment } from "../../../hooks/use-booking-mutations";
 import type { BookingDetail, Payment } from "../../../types";
@@ -80,55 +81,54 @@ function BookingDetailContent({ booking }: { booking: BookingDetail }) {
           </>
         }
       />
-      <div className="flex flex-col gap-6 px-4 pb-8 md:px-8">
+      <div className="flex flex-col gap-6 px-4 pb-10 md:gap-8 md:px-10">
         <MoneySummary booking={booking} />
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <SectionCard
-            title="Payments"
-            description="Payments are never edited: delete a wrong one and add it again."
-            action={
-              canPay && (
-                <Button size="sm" onClick={() => setDialog("payment")}>
-                  <PlusIcon data-icon="inline-start" />
-                  Add payment
-                </Button>
-              )
-            }
-            contentClassName="px-0"
-          >
-            <PaymentsTable
-              payments={booking.payments}
-              showNote
-              action={(payment) => (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Delete payment of ${formatMoney(payment.amount)}`}
-                  onClick={() => setDeleting(payment)}
-                >
-                  <Trash2Icon />
-                </Button>
-              )}
-            />
-          </SectionCard>
-          <div className="flex flex-col gap-6">
-            <SectionCard
-              title="Event"
-              action={
-                <LinkButton variant="ghost" size="sm" href={`/admin/quotations/${booking.quotationId}`}>
-                  Quotation & bids
-                  <ExternalLinkIcon data-icon="inline-end" />
-                </LinkButton>
-              }
-            >
-              <EventFacts quotation={booking.quotation} />
-            </SectionCard>
-            {booking.notes && (
-              <SectionCard title="Notes">
-                <p className="text-sm whitespace-pre-line">{booking.notes}</p>
-              </SectionCard>
+        {/* payments get the full width: the table needs room for every column */}
+        <SectionCard
+          title="Payments"
+          description="Payments are never edited: delete a wrong one and add it again."
+          action={
+            canPay && (
+              <Button onClick={() => setDialog("payment")}>
+                <PlusIcon data-icon="inline-start" />
+                Add payment
+              </Button>
+            )
+          }
+          contentClassName="px-0"
+        >
+          <PaymentsTable
+            payments={booking.payments}
+            showNote
+            action={(payment) => (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Delete payment of ${formatMoney(payment.amount)}`}
+                onClick={() => setDeleting(payment)}
+              >
+                <Trash2Icon />
+              </Button>
             )}
-          </div>
+          />
+        </SectionCard>
+        <div className={cn("grid items-start gap-6 md:gap-8", booking.notes && "xl:grid-cols-2")}>
+          <SectionCard
+            title="Event"
+            action={
+              <LinkButton variant="ghost" size="sm" href={`/admin/quotations/${booking.quotationId}`}>
+                Quotation & bids
+                <ExternalLinkIcon data-icon="inline-end" />
+              </LinkButton>
+            }
+          >
+            <EventFacts quotation={booking.quotation} />
+          </SectionCard>
+          {booking.notes && (
+            <SectionCard title="Notes">
+              <p className="text-sm break-words whitespace-pre-line">{booking.notes}</p>
+            </SectionCard>
+          )}
         </div>
       </div>
       <AddPaymentDialog

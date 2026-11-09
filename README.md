@@ -1,68 +1,94 @@
 # VENDOR BIDDING SYSTEM
 
-NestJS + TypeORM + PostgreSQL API (`backend/`) and a Next.js client (`frontend/`).
+Vendor bidding and booking system for Mero Event. It has two portals:
+
+- **Admin portal**: manage vendors, create quotations (event details, items, reference photos), send them to one or more vendors, compare bids, select the winner, and track the booking's amount, payments and pending balance.
+- **Vendor portal**: see requests sent to you, review the details and photos, submit or decline a bid, follow your bids and bookings, and keep your profile up to date.
+
+Each vendor sees only its own requests, bids and bookings.
+
+## Tech stack
+
+| Part | Stack |
+| --- | --- |
+| Frontend (`frontend/`) | Next.js, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS |
+| Backend (`backend/`) | NestJS, TypeORM, class-validator, Swagger |
+| Database | PostgreSQL (Docker) |
+| Auth | JWT in an httpOnly `access_token` cookie, admin and vendor roles |
 
 ## Prerequisites
 
-Node 24, pnpm, and Docker (for PostgreSQL).
+Node 24, pnpm and Docker.
 
-## Run locally
+## Setup
 
 ```bash
-# 0. Git hooks (husky pre-commit lints backend/frontend)
+# 1. Git hooks (husky pre-commit lints the backend and frontend)
 pnpm install
 
-# 1. Database
+# 2. Database
 docker compose up -d
 
-# 2. Backend (http://localhost:4000)
+# 3. Backend on http://localhost:4000
 cd backend
 pnpm install
 cp .env.example .env          # set JWT_SECRET: openssl rand -hex 32
 pnpm migration:run
-pnpm seed                     # demo admin + vendors (skips existing; refuses in production)
+pnpm seed                     # demo admin and vendors; skips existing rows, refuses in production
 pnpm start:dev
 
-# 3. Frontend (http://localhost:3000), in another terminal
+# 4. Frontend on http://localhost:3000, in another terminal
 cd frontend
 pnpm install
 cp .env.example .env.local
 pnpm dev
 ```
 
-Project docs (features, design, demo script): [docs/README.md](docs/README.md)
+Open http://localhost:3000 and sign in with a demo login below.
 
-API docs (Swagger UI, not served when `NODE_ENV=production`): http://localhost:4000/api/docs
+## Demo logins
+
+| Login | Password | Role |
+| --- | --- | --- |
+| `admin@meroevent.com` | `Admin@12345` | Admin |
+| `decor@vendor.test`, `catering@vendor.test`, `sound@vendor.test` | `Vendor@12345` | Vendor, each linked to its own vendor |
+
+## Environment
+
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | backend | Postgres connection, matches `docker-compose.yml` by default |
+| `JWT_SECRET` | backend | At least 32 characters |
+| `JWT_EXPIRES_IN_SECONDS` | backend | Session length, 7 days by default |
+| `FRONTEND_ORIGIN` | backend | Allowed CORS origin for the cookie |
+| `UPLOAD_DIR` | backend | Folder for uploaded quotation photos |
+| `NEXT_PUBLIC_API_URL` | frontend | API base URL, `http://localhost:4000/api/v1` |
 
 ## API
 
-All routes live under `/api/v1`. The session is an httpOnly `access_token` cookie.
-
-| Method | Path                  | Notes                         |
-| ------ | --------------------- | ----------------------------- |
-| POST   | `/api/v1/auth/login`  | `{ email, password }`         |
-| POST   | `/api/v1/auth/logout` | clears the cookie             |
-| GET    | `/api/v1/auth/me`     | current user, 401 if no session |
-| GET/POST | `/api/v1/vendors`   | admin: list (paginated) / create vendor + login |
-| GET/PATCH | `/api/v1/vendors/:id` | admin: view / edit, `isActive: false` deactivates |
+All routes live under `/api/v1`. Swagger UI is at http://localhost:4000/api/docs (not served when `NODE_ENV=production`). Admin routes sit at the root (`/vendors`, `/quotations`, `/bookings`), and vendor routes under `/vendor/...` are always scoped to the signed-in vendor.
 
 ## Migrations (backend)
 
-The TypeORM CLI runs the TypeScript source directly via ts-node (`src/database/data-source.ts`); `dist/` is only for `start:prod`.
+The TypeORM CLI runs the TypeScript source through ts-node (`src/database/data-source.ts`); `dist/` is only for `start:prod`.
 
 ```bash
-pnpm migration:generate src/migrations/<name>   # kebab-case, no `--`, e.g. src/migrations/create-bids: diffs entities against the DB into src/migrations/
+pnpm migration:generate src/migrations/<name>   # kebab-case, e.g. src/migrations/create-bids
 pnpm migration:run
 pnpm migration:revert
 ```
 
-Reset the local database: `docker compose down -v`.
+Reset the local database with `docker compose down -v`, then run the migrations and seed again.
 
-## Seed data (backend, not in production)
+## Useful scripts
 
-`pnpm seed` runs `src/database/seeds/seed.ts`, which calls each seeder in order and exits if `NODE_ENV=production`.
-
-| Login | Password | Role |
+| Command | Where | What it does |
 | --- | --- | --- |
-| `admin@meroevent.com` | `Admin@12345` | admin (no vendor) |
-| `decor@vendor.test`, `catering@vendor.test`, `sound@vendor.test` | `Vendor@12345` | vendor, each linked to its own vendor |
+| `pnpm start:dev` | backend | API with watch mode |
+| `pnpm lint` | backend, frontend | oxlint (backend), eslint (frontend) |
+| `pnpm seed` | backend | Demo data, development only |
+| `pnpm build` | frontend | Production build |
+
+## Project docs
+
+Features, data model, workflow, design decisions, the demo script and future scope are in [docs/README.md](docs/README.md). Each backend module also has its own `README.md`.

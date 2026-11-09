@@ -31,6 +31,14 @@ Admins add and manage the partner vendors who receive work requests. Creating a 
 | GET | `/vendors/:id` | |
 | PATCH | `/vendors/:id` | partial; `isActive` toggles access |
 
+## Vendor portal endpoints (vendor only)
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/vendor/profile` | the session's own vendor; admin `notes` stripped |
+| PATCH | `/vendor/profile` | the vendor edits its own `name`, `phone`, `contactName`, `address`; any other field is refused (400) |
+| GET | `/vendor/summary` | `{ newRequests, bidsInProgress, upcomingBookings }` for the portal home |
+
 ## Structure
 
 ```

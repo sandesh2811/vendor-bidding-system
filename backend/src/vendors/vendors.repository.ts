@@ -1,9 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type FindOptionsWhere, ILike, type Repository } from 'typeorm';
-import type { VendorCategory } from '../common/constants';
+import { Bid } from '../bids/entities/bid.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import {
+  BidStatus,
+  BookingStatus,
+  QuotationStatus,
+  type VendorCategory,
+} from '../common/constants';
+import { businessToday } from '../common/validators/is-not-past-date.validator';
+import { QuotationRecipient } from '../quotations/entities/quotation-recipient.entity';
 import { User } from '../users/entities/user.entity';
 import type { NewUser } from '../users/users.repository';
+import type { VendorSummaryDto } from './dto/vendor-summary.dto';
 import { Vendor } from './entities/vendor.entity';
 
 export type NewVendor = Omit<Vendor, 'id' | 'isActive' | 'createdAt'>;
@@ -52,6 +62,34 @@ export class VendorsRepository {
     return this.repo.metadata.columns
       .map((column) => `"${column.databaseName}" AS "${column.propertyName}"`)
       .join(', ');
+  }
+
+  /* three counts for the vendor portal home; "open" is the effective status (deadline not passed) */
+  async summary(vendorId: string): Promise<VendorSummaryDto> {
+    const { manager } = this.repo;
+    const [newRequests, bidsInProgress, upcomingBookings] = await Promise.all([
+      manager
+        .createQueryBuilder(QuotationRecipient, 'recipient')
+        .innerJoin('recipient.quotation', 'quotation')
+        .leftJoin(
+          Bid,
+          'bid',
+          'bid.quotationId = recipient.quotationId AND bid.vendorId = recipient.vendorId',
+        )
+        .where('recipient.vendorId = :vendorId', { vendorId })
+        .andWhere('recipient.declinedAt IS NULL')
+        .andWhere('bid.id IS NULL')
+        .andWhere('quotation.status = :open', { open: QuotationStatus.Open })
+        .andWhere(
+          '(quotation.responseDeadline IS NULL OR quotation.responseDeadline >= :today)',
+          { today: businessToday() },
+        )
+        .getCount(),
+      manager.countBy(Bid, { vendorId, status: BidStatus.Submitted }),
+      manager.countBy(Booking, { vendorId, status: BookingStatus.Confirmed }),
+    ]);
+
+    return { newRequests, bidsInProgress, upcomingBookings };
   }
 
   findByPhone(phone: string): Promise<Vendor | null> {

@@ -19,7 +19,7 @@ export function EmptyState({
   return (
     <Empty className={cn("py-16", className)}>
       <EmptyHeader>
-        <EmptyMedia variant="icon">
+        <EmptyMedia className="text-muted-foreground/70 [&_svg]:size-6">
           <Icon />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>

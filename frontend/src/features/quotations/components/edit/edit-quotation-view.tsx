@@ -3,6 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { LockIcon } from "lucide-react";
+import { EmptyState } from "@/components/layout/empty-state";
+import { LinkButton } from "@/components/layout/link-button";
 import { AdminTopBar, PageTitle } from "@/components/layout/page-header";
 import { QueryBoundary } from "@/components/layout/query-boundary";
 import { quotationQuery } from "../../api/quotations.api";
@@ -23,9 +26,27 @@ export function EditQuotationView({ id }: { id: string }) {
     <>
       <AdminTopBar section="Quotations" />
       <QueryBoundary query={query} errorTitle="Couldn't load this quotation" fallback={<QuotationSkeleton />}>
-        {(quotation) => <EditForm quotation={quotation} />}
+        {(quotation) => (quotation.status === "draft" ? <EditForm quotation={quotation} /> : <Locked quotation={quotation} />)}
       </QueryBoundary>
     </>
+  );
+}
+
+/* once sent, details and items are locked; the deadline is changed from the quotation page */
+function Locked({ quotation }: { quotation: QuotationDetail }) {
+  const detailHref = `/admin/quotations/${quotation.id}`;
+  return (
+    <EmptyState
+      icon={LockIcon}
+      title="This quotation can no longer be edited"
+      description="Once sent, only the response deadline can change. To change anything else, cancel it and create a new one."
+      action={
+        <LinkButton variant="outline" href={detailHref}>
+          Back to quotation
+        </LinkButton>
+      }
+      className="py-16"
+    />
   );
 }
 

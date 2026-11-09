@@ -5,7 +5,7 @@ import type { QuotationItem } from "../../types";
 export function QuotationItemsTable({ items }: { items: QuotationItem[] }) {
   return (
     <Table>
-      <TableHeader className="bg-muted/50">
+      <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="w-10 pl-4 text-xs text-muted-foreground">#</TableHead>
           <TableHead className="text-xs text-muted-foreground">Item</TableHead>

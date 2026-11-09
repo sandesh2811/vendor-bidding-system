@@ -5,6 +5,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -19,6 +20,7 @@ import { Booking } from './booking.entity';
 
 /* one payment to the vendor; append-only: a wrong entry is deleted, never edited */
 @Entity('payments')
+@Index('IDX_payments_booking_id', ['bookingId'])
 @Check(CHECK_CONSTRAINTS.PAYMENT_AMOUNT.name, `"amount" > 0`)
 export class Payment {
   @PrimaryGeneratedColumn('uuid')

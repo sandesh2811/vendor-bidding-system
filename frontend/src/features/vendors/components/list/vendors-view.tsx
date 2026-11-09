@@ -25,7 +25,7 @@ export function VendorsView() {
   const columns = useMemo(() => vendorColumns({ onEdit: setEditing, onToggleActive: setToggling }), []);
 
   const addButton = (
-    <Button onClick={() => setCreating(true)}>
+    <Button size="lg" className="px-4 has-data-[icon=inline-start]:pl-3" onClick={() => setCreating(true)}>
       <PlusIcon data-icon="inline-start" />
       Add vendor
     </Button>

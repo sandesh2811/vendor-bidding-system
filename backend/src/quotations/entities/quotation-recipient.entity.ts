@@ -39,4 +39,15 @@ export class QuotationRecipient {
 
   @CreateDateColumn({ type: 'timestamptz' })
   sentAt: Date;
+
+  /* first time the vendor opened it; null until then */
+  @Column({ type: 'timestamptz', nullable: true })
+  viewedAt: Date | null;
+
+  /* set when the vendor declines; cleared when the admin sends it to the vendor again */
+  @Column({ type: 'timestamptz', nullable: true })
+  declinedAt: Date | null;
+
+  @Column({ type: 'text', nullable: true })
+  declineReason: string | null;
 }

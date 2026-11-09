@@ -1,11 +1,13 @@
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import {
+  AfterInsert,
   AfterLoad,
   Check,
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -28,6 +30,7 @@ import { Payment } from './payment.entity';
 
 /* the winning bid of a quotation; created only by selecting a bid, at most one per quotation */
 @Entity('bookings')
+@Index('IDX_bookings_vendor_id', ['vendorId'])
 @Unique(UNIQUE_CONSTRAINTS.BOOKING_QUOTATION.name, ['quotationId'])
 @Unique(UNIQUE_CONSTRAINTS.BOOKING_BID.name, ['bidId'])
 /* paid_amount moves only with payment inserts/deletes; this CHECK is what makes overpaying impossible under concurrency */
@@ -101,6 +104,8 @@ export class Booking {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
+  /* after insert too: paid_amount comes back from the INSERT (it has a default), so select returns these fields */
+  @AfterInsert()
   @AfterLoad()
   protected applyMoney(): void {
     if (this.amount === undefined || this.paidAmount === undefined) return;

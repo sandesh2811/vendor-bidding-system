@@ -22,6 +22,7 @@ export const QUOTATION_LIMITS = {
   MAX_GUESTS: 100_000,
   UNIT_MAX: 30,
   ITEM_NOTES_MAX: 1000,
+  DECLINE_REASON_MAX: 1000,
 } as const;
 
 export const PHOTO_LIMITS = {

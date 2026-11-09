@@ -34,7 +34,7 @@ export function VendorBookingDetailView({ id }: { id: string }) {
             back={{ href: "/vendor/bookings", label: "Back to bookings" }}
             className="px-0 pt-0 pb-6"
           />
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 md:gap-8">
             <MoneySummary booking={booking} />
             <SectionCard title="Event">
               <EventFacts quotation={booking.quotation} />
@@ -57,7 +57,7 @@ function AgreedItems({ booking: { quotation, bid } }: { booking: VendorBookingDe
 
   return (
     <Table>
-      <TableHeader className="bg-muted/50">
+      <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="pl-6 text-xs text-muted-foreground">Item</TableHead>
           <TableHead className="text-right text-xs text-muted-foreground">Qty</TableHead>

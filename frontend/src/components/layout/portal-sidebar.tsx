@@ -1,7 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronsUpDownIcon, FileTextIcon, HandCoinsIcon, LogOutIcon, StoreIcon } from "lucide-react";
+import {
+  ChevronsUpDownIcon,
+  FileTextIcon,
+  HandCoinsIcon,
+  InboxIcon,
+  LogOutIcon,
+  type LucideIcon,
+  StoreIcon,
+  UserIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,7 +29,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -32,25 +40,51 @@ import { useLogout } from "@/features/auth/use-logout";
 import { meQuery } from "@/lib/api";
 import { initials } from "@/lib/format";
 
-export const ADMIN_NAV = [
+type NavItem = { title: string; href: string; icon: LucideIcon; matches?: (path: string) => boolean };
+
+export const ADMIN_NAV: NavItem[] = [
   { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon },
   { title: "Bookings", href: "/admin/bookings", icon: HandCoinsIcon },
   { title: "Vendors", href: "/admin/vendors", icon: StoreIcon },
-] as const;
+];
 
-export function AdminSidebar() {
+export const VENDOR_NAV: NavItem[] = [
+  {
+    title: "Requests",
+    href: "/vendor",
+    icon: InboxIcon,
+    matches: (path) => path === "/vendor" || path.startsWith("/vendor/quotations"),
+  },
+  { title: "Bookings", href: "/vendor/bookings", icon: HandCoinsIcon },
+  { title: "Profile", href: "/vendor/profile", icon: UserIcon },
+];
+
+export const isNavActive = (item: NavItem, path: string) => item.matches?.(path) ?? path.startsWith(item.href);
+
+/* collapsible portal sidebar: brand, nav and the signed-in user's menu; shared by the admin and vendor portals */
+export function PortalSidebar({
+  nav,
+  homeHref,
+  subtitle,
+  roleLabel,
+}: {
+  nav: NavItem[];
+  homeHref: string;
+  subtitle: string;
+  roleLabel: string;
+}) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/admin/vendors" />}>
-              <BrandMark className="size-8" />
+            <SidebarMenuButton size="lg" render={<Link href={homeHref} />}>
+              <BrandMark className="size-7 text-xs" />
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate font-semibold text-sidebar-accent-foreground">Mero Event</span>
-                <span className="truncate text-xs text-sidebar-foreground/70">Vendor management</span>
+                <span className="truncate text-xs text-sidebar-foreground/70">{subtitle}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -59,16 +93,15 @@ export function AdminSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50">Manage</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {ADMIN_NAV.map((item) => (
+              {nav.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
+                    isActive={isNavActive(item, pathname)}
                     tooltip={item.title}
                     render={<Link href={item.href} />}
-                    className="data-active:text-sidebar-accent-foreground data-active:[&_svg]:text-sidebar-primary"
+                    className="text-sidebar-foreground data-active:font-medium data-active:text-sidebar-accent-foreground"
                   >
                     <item.icon />
                     <span>{item.title}</span>
@@ -81,14 +114,14 @@ export function AdminSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <UserMenu />
+        <UserMenu roleLabel={roleLabel} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
 }
 
-function UserMenu() {
+function UserMenu({ roleLabel }: { roleLabel: string }) {
   const { data: user } = useQuery(meQuery);
   const logoutMutation = useLogout();
 
@@ -101,8 +134,8 @@ function UserMenu() {
           <DropdownMenuTrigger
             render={<SidebarMenuButton size="lg" className="data-popup-open:bg-sidebar-accent" />}
           >
-            <Avatar className="after:border-sidebar-border">
-              <AvatarFallback className="bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
+            <Avatar className="size-7 after:border-sidebar-border">
+              <AvatarFallback className="bg-sidebar-accent text-[11px] font-medium text-sidebar-accent-foreground">
                 {initials(user.name)}
               </AvatarFallback>
             </Avatar>
@@ -116,7 +149,7 @@ function UserMenu() {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="font-normal">
                 <div className="text-sm font-medium text-foreground">{user.name}</div>
-                <div className="text-xs text-muted-foreground">Administrator</div>
+                <div className="text-xs text-muted-foreground">{roleLabel}</div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

@@ -24,17 +24,15 @@ const SELECTABLE = [QuotationStatus.Open, QuotationStatus.Closed];
 export class BidsRepository {
   constructor(@InjectRepository(Bid) private readonly bids: Repository<Bid>) {}
 
-  /* the quotation with its items, only if it was sent to this vendor; status is effective (@AfterLoad) */
-  async findReceivedQuotation(
+  /* this vendor's recipient row with the quotation and its items; null if it wasn't sent to this vendor. Status is effective (@AfterLoad) */
+  findRecipient(
     vendorId: string,
     quotationId: string,
-  ): Promise<Quotation | null> {
-    const recipient = await this.bids.manager.findOne(QuotationRecipient, {
+  ): Promise<QuotationRecipient | null> {
+    return this.bids.manager.findOne(QuotationRecipient, {
       where: { vendorId, quotationId },
       relations: { quotation: { items: true } },
     });
-
-    return recipient?.quotation ?? null;
   }
 
   /**

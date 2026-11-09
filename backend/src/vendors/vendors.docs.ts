@@ -9,6 +9,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { VendorPageDto } from './dto/list-vendors.dto';
+import { VendorSummaryDto } from './dto/vendor-summary.dto';
 import { Vendor } from './entities/vendor.entity';
 
 export const VendorsDocs = {
@@ -51,5 +52,35 @@ export const VendorsDocs = {
       ApiOkResponse({ type: Vendor }),
       ApiBadRequestResponse({ description: 'Validation failed' }),
       ApiNotFoundResponse({ description: 'Vendor not found' }),
+    ),
+};
+
+export const VendorPortalDocs = {
+  controller: () => ApiTags('Vendor portal'),
+
+  profile: () =>
+    applyDecorators(
+      ApiOperation({ summary: 'My vendor profile' }),
+      ApiOkResponse({ type: Vendor }),
+    ),
+
+  updateProfile: () =>
+    applyDecorators(
+      ApiOperation({
+        summary:
+          'Edit my business name, phone, contact person or address (not emails or password)',
+      }),
+      ApiOkResponse({ type: Vendor }),
+      ApiBadRequestResponse({ description: 'Validation failed' }),
+      ApiConflictResponse({ description: 'Phone belongs to another vendor' }),
+    ),
+
+  summary: () =>
+    applyDecorators(
+      ApiOperation({
+        summary:
+          'Counts for my home: new requests, bids in progress, upcoming bookings',
+      }),
+      ApiOkResponse({ type: VendorSummaryDto }),
     ),
 };

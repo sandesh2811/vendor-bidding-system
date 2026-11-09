@@ -34,7 +34,7 @@ export function PageHeader({
 /* sidebar toggle and section name; rendered on its own while a page's data (and so its title) loads */
 export function AdminTopBar({ section }: { section: string }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+    <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-1 data-vertical:h-4" />
       <span className="text-sm text-muted-foreground">{section}</span>
@@ -49,7 +49,7 @@ export function PageTitle({
   actions,
   badge,
   back,
-  className = "px-4 pt-8 pb-6 md:px-8",
+  className = "px-4 pt-8 pb-6 md:px-10",
 }: Omit<Parameters<typeof PageHeader>[0], "section"> & { className?: string }) {
   return (
     <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
@@ -61,7 +61,7 @@ export function PageTitle({
         )}
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight break-words">{title}</h1>
+            <h1 className="text-xl font-semibold break-words">{title}</h1>
             {badge}
           </div>
           {description && <div className="text-sm text-muted-foreground">{description}</div>}

@@ -11,6 +11,9 @@ import { formatDate } from "@/lib/format";
 import type { QuotationRecipient } from "../../types";
 import { SendToVendorsDialog } from "./send-to-vendors-dialog";
 
+const invitationState = ({ viewedAt, declinedAt }: QuotationRecipient) =>
+  declinedAt ? `Declined ${formatDate(declinedAt)}` : viewedAt ? `Viewed ${formatDate(viewedAt)}` : "Not opened";
+
 /* who has the quotation, most recent first, and the way to send it to more vendors (only while draft or open) */
 export function RecipientsCard({
   quotationId,
@@ -40,12 +43,18 @@ export function RecipientsCard({
       >
         {recipients.length ? (
           <ul className="-my-2 divide-y">
-            {recipients.map(({ id, vendor, sentAt }) => (
-              <li key={id} className="py-3">
-                <VendorIdentity name={vendor.name}>
+            {recipients.map((recipient) => (
+              <li key={recipient.id} className="py-3">
+                <VendorIdentity name={recipient.vendor.name}>
                   <div className="truncate text-xs text-muted-foreground">
-                    {CATEGORY_LABELS[vendor.category]} · Sent {formatDate(sentAt)}
+                    {CATEGORY_LABELS[recipient.vendor.category]} · Sent {formatDate(recipient.sentAt)} ·{" "}
+                    {invitationState(recipient)}
                   </div>
+                  {recipient.declineReason && (
+                    <div className="mt-0.5 text-xs whitespace-pre-line text-muted-foreground">
+                      &ldquo;{recipient.declineReason}&rdquo;
+                    </div>
+                  )}
                 </VendorIdentity>
               </li>
             ))}
