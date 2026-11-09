@@ -23,6 +23,10 @@ export interface QuotationRecipient {
   id: string;
   vendorId: string;
   sentAt: string;
+  /* invitation state: first opened, and declined (with an optional reason) */
+  viewedAt: string | null;
+  declinedAt: string | null;
+  declineReason: string | null;
   vendor: Vendor;
 }
 
@@ -47,9 +51,10 @@ export interface QuotationContents {
   photos: QuotationPhoto[];
 }
 
-/* admin list row */
+/* admin list row; bidCount only comes with the list */
 export interface Quotation extends QuotationEvent {
   recipients: QuotationRecipient[];
+  bidCount?: number;
 }
 
 export type QuotationDetail = Quotation & QuotationContents;
@@ -59,6 +64,9 @@ export interface ReceivedQuotation extends QuotationEvent {
   receivedAt: string;
   /* this vendor's own bid, null until it bids */
   bidStatus: BidStatus | null;
+  /* this vendor's own invitation */
+  viewedAt: string | null;
+  declinedAt: string | null;
 }
 
 export type ReceivedQuotationDetail = ReceivedQuotation & QuotationContents;
@@ -93,4 +101,6 @@ export interface ListQuotationsParams {
   limit: number;
   search?: string;
   eventType?: EventType;
+  /* effective: open excludes quotations past their deadline, closed includes them */
+  status?: QuotationStatus;
 }

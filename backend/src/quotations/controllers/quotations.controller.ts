@@ -28,7 +28,10 @@ import {
 import type { User } from '../../users/entities/user.entity';
 import { AddRecipientsDto } from '../dto/add-recipients.dto';
 import { CreateQuotationDto } from '../dto/create-quotation.dto';
-import { ListQuotationsQueryDto } from '../dto/list-quotations.dto';
+import {
+  type ListedQuotationDto,
+  ListQuotationsQueryDto,
+} from '../dto/list-quotations.dto';
 import { PhotoParamDto } from '../dto/photo-param.dto';
 import { UpdateQuotationDto } from '../dto/update-quotation.dto';
 import { toStreamableFile } from './photo-response';
@@ -57,7 +60,7 @@ export class QuotationsController {
   @QuotationsDocs.findAll()
   findAll(
     @Query() query: ListQuotationsQueryDto,
-  ): Promise<Paginated<Quotation>> {
+  ): Promise<Paginated<ListedQuotationDto>> {
     return this.quotations.findAll(query);
   }
 

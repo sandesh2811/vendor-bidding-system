@@ -2,7 +2,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { formatMoney } from "@/lib/format";
 import type { Booking } from "../../types";
 
-/* amount owed, paid so far, and what's still pending */
+/* amount owed, paid so far, and what's still pending; one card each, compact rows on phones */
 export function MoneySummary({ booking }: { booking: Pick<Booking, "amount" | "paidAmount" | "pendingAmount"> }) {
   const cards = [
     { label: "Booking amount", value: booking.amount },
@@ -11,12 +11,12 @@ export function MoneySummary({ booking }: { booking: Pick<Booking, "amount" | "p
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
       {cards.map((card) => (
-        <Card key={card.label} className="gap-1 py-4">
-          <CardHeader className="px-5">
+        <Card key={card.label} className="gap-1 py-3 sm:py-4">
+          <CardHeader className="flex items-baseline justify-between gap-4 px-4 sm:grid sm:px-5">
             <CardDescription>{card.label}</CardDescription>
-            <CardTitle className="text-xl tabular-nums">{formatMoney(card.value)}</CardTitle>
+            <CardTitle className="text-lg tabular-nums sm:text-xl">{formatMoney(card.value)}</CardTitle>
           </CardHeader>
         </Card>
       ))}

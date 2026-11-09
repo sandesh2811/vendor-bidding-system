@@ -12,8 +12,16 @@ import { AddPhotosButton } from "../shared/add-photos-button";
 import type { GridPhoto } from "../shared/photo-grid";
 import { PhotosSection } from "../shared/photos-section";
 
-/* the admin's photo block: upload more (deduplicated by the API) and remove with confirmation */
-export function ManagedPhotosSection({ quotationId, photos }: { quotationId: string; photos: QuotationPhoto[] }) {
+/* the admin's photo block: upload more (deduplicated by the API) and, while a draft, remove with confirmation */
+export function ManagedPhotosSection({
+  quotationId,
+  photos,
+  canRemove,
+}: {
+  quotationId: string;
+  photos: QuotationPhoto[];
+  canRemove: boolean;
+}) {
   const upload = useUploadPhotos(quotationId);
   const remove = useRemovePhoto(quotationId);
   const [removing, setRemoving] = useState<GridPhoto | null>(null);
@@ -46,7 +54,7 @@ export function ManagedPhotosSection({ quotationId, photos }: { quotationId: str
             }
           />
         }
-        onRemove={setRemoving}
+        onRemove={canRemove ? setRemoving : undefined}
         removingId={remove.isPending ? removing?.id : null}
       />
       <ConfirmDialog

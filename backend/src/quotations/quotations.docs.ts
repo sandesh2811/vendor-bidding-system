@@ -69,7 +69,7 @@ export const QuotationsDocs = {
     applyDecorators(
       ApiOperation({
         summary:
-          'Edit details; `items` replaces the list (ids kept are updated, new ones added, missing removed)',
+          'Edit a draft (`items` replaces the list: ids kept are updated, new ones added, missing removed); once sent, only `responseDeadline`',
       }),
       ApiOkResponse({ type: Quotation }),
       ApiBadRequestResponse({
@@ -77,7 +77,7 @@ export const QuotationsDocs = {
       }),
       ApiConflictResponse({
         description:
-          'Another quotation has this title, event date and location; the quotation is awarded or cancelled; or items changed after a bid',
+          'Another quotation has this title, event date and location; the quotation is awarded or cancelled; or it is sent and something other than responseDeadline changed',
       }),
       ApiNotFoundResponse({ description: 'Quotation not found' }),
     ),
@@ -146,8 +146,9 @@ export const QuotationsDocs = {
 
   removePhoto: () =>
     applyDecorators(
-      ApiOperation({ summary: 'Delete a photo' }),
+      ApiOperation({ summary: 'Delete a photo (drafts only)' }),
       ApiNoContentResponse(),
+      ApiConflictResponse({ description: 'Quotation is no longer a draft' }),
       ApiNotFoundResponse({ description: 'Photo not found' }),
     ),
 
@@ -169,7 +170,8 @@ export const VendorQuotationsDocs = {
   findOne: () =>
     applyDecorators(
       ApiOperation({
-        summary: 'A quotation sent to me, with items and photos',
+        summary:
+          'A quotation sent to me, with items and photos (the first open marks it viewed)',
       }),
       ApiOkResponse({ type: ReceivedQuotationDto }),
       ApiNotFoundResponse({ description: 'Not found or not sent to me' }),
@@ -179,5 +181,19 @@ export const VendorQuotationsDocs = {
     applyDecorators(
       ApiOperation({ summary: 'Download a photo of a quotation sent to me' }),
       photoFile(),
+    ),
+
+  decline: () =>
+    applyDecorators(
+      ApiOperation({
+        summary:
+          'Decline a quotation sent to me, with an optional reason (idempotent)',
+      }),
+      ApiOkResponse({ type: ReceivedQuotationDto }),
+      ApiBadRequestResponse({ description: 'Reason too long' }),
+      ApiConflictResponse({
+        description: 'Quotation is not open, or I have already bid on it',
+      }),
+      ApiNotFoundResponse({ description: 'Not found or not sent to me' }),
     ),
 };

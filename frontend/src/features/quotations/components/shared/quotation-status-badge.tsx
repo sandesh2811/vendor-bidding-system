@@ -5,7 +5,7 @@ import { QUOTATION_STATUS_LABELS, type QuotationStatus } from "../../constants";
 const DOT: Record<QuotationStatus, string> = {
   draft: "bg-muted-foreground/40",
   open: "bg-primary",
-  closed: "bg-amber-500",
+  closed: "bg-warning",
   awarded: "bg-success",
   cancelled: "bg-destructive",
 };

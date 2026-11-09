@@ -29,7 +29,7 @@ export function BidFormCard({ quotation }: { quotation: ReceivedQuotationDetail 
   return (
     <QueryBoundary query={query} errorTitle="Couldn't load your bid" fallback={<Skeleton className="h-64 w-full" />}>
       {(bid) =>
-        quotation.status === "open" && (!bid || bid.status === "submitted") ? (
+        quotation.status === "open" && !quotation.declinedAt && (!bid || bid.status === "submitted") ? (
           /* remount on save so the form's defaults are the saved bid */
           <BidForm key={bid?.updatedAt ?? "new"} quotation={quotation} bid={bid} />
         ) : (
@@ -132,7 +132,9 @@ function ReadOnlyBid({ quotation, bid }: { quotation: ReceivedQuotationDetail; b
   const reason =
     bid && bid.status !== "submitted"
       ? READ_ONLY_REASON[bid.status]
-      : READ_ONLY_REASON[quotation.status as "closed" | "awarded" | "cancelled"];
+      : quotation.declinedAt && quotation.status === "open"
+        ? "You declined this request."
+        : READ_ONLY_REASON[quotation.status as "closed" | "awarded" | "cancelled"];
 
   if (!bid)
     return (
@@ -182,7 +184,7 @@ function ItemsTable({
 }) {
   return (
     <Table>
-      <TableHeader className="bg-muted/50">
+      <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="pl-6 text-xs text-muted-foreground">Item</TableHead>
           <TableHead className="text-right text-xs text-muted-foreground">Qty</TableHead>

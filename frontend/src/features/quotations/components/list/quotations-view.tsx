@@ -18,7 +18,7 @@ export function QuotationsView() {
   const list = useQuotationList();
 
   const newButton = (
-    <LinkButton href={NEW_HREF}>
+    <LinkButton href={NEW_HREF} size="lg" className="px-4 has-data-[icon=inline-start]:pl-3">
       <PlusIcon data-icon="inline-start" />
       New quotation
     </LinkButton>

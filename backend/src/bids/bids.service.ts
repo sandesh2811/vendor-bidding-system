@@ -34,7 +34,7 @@ export class BidsService {
    * @returns {Promise<Bid>} The bid with its lines
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if the quotation wasn't sent to this vendor
    * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation isn't open (closed, past its deadline, awarded or cancelled)
-   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the bid was already selected or rejected
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the bid was already selected or rejected, or the vendor declined the quotation
    * @throws {BadRequestException} Throws a `BadRequestException` with HTTP status code 400 (Bad request) if an item is missing, repeated or from another quotation, or an amount is too large
    *
    * @example
@@ -47,12 +47,21 @@ export class BidsService {
     quotationId: string,
     { items, notes = null, validUntil = null }: SubmitBidDto,
   ): Promise<Bid> {
-    const quotation = await this.bids.findReceivedQuotation(
-      vendorId,
-      quotationId,
-    );
+    const recipient = await this.bids.findRecipient(vendorId, quotationId);
 
-    if (!quotation) throw this.quotationNotFound('submit', quotationId);
+    if (!recipient) throw this.quotationNotFound('submit', quotationId);
+    const quotation = recipient.quotation!;
+
+    if (recipient.declinedAt) {
+      this.logger.warn({
+        method: 'submit',
+        message: 'Vendor declined this quotation',
+        quotationId,
+      });
+      throw new ConflictException(
+        'You declined this request. Mero Event has to send it to you again before you can bid',
+      );
+    }
 
     if (quotation.status !== QuotationStatus.Open) {
       this.logger.warn({

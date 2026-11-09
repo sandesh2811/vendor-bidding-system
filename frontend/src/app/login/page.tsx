@@ -32,37 +32,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-svh lg:grid-cols-[1fr_1.1fr]">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-sidebar-foreground lg:flex">
-        <div className="flex items-center gap-2.5">
-          <BrandMark className="size-8" />
-          <span className="font-semibold text-sidebar-accent-foreground">Mero Event</span>
-        </div>
-        <div className="max-w-md space-y-4">
-          <p className="text-sm font-medium tracking-wide text-brand uppercase">Vendor bidding</p>
-          <h2 className="text-3xl leading-tight font-semibold text-sidebar-accent-foreground">
-            Request quotes, compare bids and book the right vendor for every event.
-          </h2>
-        </div>
-        <p className="text-xs text-sidebar-foreground/60">Digital Events Pvt Ltd</p>
-      </aside>
+    <div className="flex min-h-svh flex-col bg-sidebar">
+      <header className="flex items-center gap-2 px-6 py-5 md:px-10">
+        <BrandMark className="size-7 text-xs" />
+        <span className="text-sm font-semibold">Mero Event</span>
+      </header>
 
-      <main className="flex items-center justify-center px-6 py-12">
+      <main className="flex flex-1 items-center justify-center px-6 pb-16">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <BrandMark className="size-8" />
-            <span className="font-semibold">Mero Event</span>
-          </div>
-          <div className="mb-8 space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-            <p className="text-sm text-muted-foreground">Mero Event staff and partner vendors.</p>
+          <div className="mb-8 space-y-2">
+            <h1 className="font-display text-4xl leading-tight tracking-normal">Sign in</h1>
+            <p className="text-sm text-muted-foreground">
+              Request quotes, compare bids and book vendors. For Mero Event staff and partner vendors.
+            </p>
           </div>
 
           <form onSubmit={onSubmit}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" name="email" type="email" autoComplete="email" required className="h-10" />
+                <Input id="email" name="email" type="email" autoComplete="email" required className="h-10 bg-background" />
               </Field>
               <Field>
                 <FieldLabel htmlFor="password">Password</FieldLabel>
@@ -72,7 +61,7 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="h-10"
+                  className="h-10 bg-background"
                 />
               </Field>
               <Field>
@@ -88,6 +77,8 @@ export default function LoginPage() {
           </form>
         </div>
       </main>
+
+      <footer className="px-6 py-5 text-xs text-muted-foreground md:px-10">Digital Events Pvt Ltd</footer>
     </div>
   );
 }

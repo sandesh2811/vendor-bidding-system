@@ -9,6 +9,7 @@ import {
 import {
   type BidStatus,
   QUOTATION_PHOTO,
+  QuotationStatus,
   UNIQUE_CONSTRAINTS,
 } from '../common/constants';
 import type { PaginationQueryDto } from '../common/dto/pagination.dto';
@@ -22,6 +23,7 @@ import {
 import type { UploadedFileData } from '../common/validators/image-file.validator';
 import type { CreateQuotationDto } from './dto/create-quotation.dto';
 import type {
+  ListedQuotationDto,
   ListQuotationsQueryDto,
   ReceivedQuotationDto,
 } from './dto/list-quotations.dto';
@@ -30,7 +32,6 @@ import type { QuotationPhoto } from './entities/quotation-photo.entity';
 import type { QuotationRecipient } from './entities/quotation-recipient.entity';
 import type { Quotation } from './entities/quotation.entity';
 import {
-  ItemsLockedError,
   type NewPhoto,
   PhotoLimitError,
   QuotationStateError,
@@ -117,10 +118,10 @@ export class QuotationsService {
   }
 
   /**
-   * Lists quotations, newest first, with their recipients.
+   * Lists quotations, newest first, with their recipients and bid count.
    *
-   * @param {ListQuotationsQueryDto} query - page, limit, and optional search (title or location) and eventType
-   * @returns {Promise<Paginated<Quotation>>} One page plus pagination meta
+   * @param {ListQuotationsQueryDto} query - page, limit, and optional search (title or location), eventType and effective status
+   * @returns {Promise<Paginated<ListedQuotationDto>>} One page plus pagination meta
    *
    * @example
    * ```ts
@@ -130,13 +131,18 @@ export class QuotationsService {
   async findAll({
     search,
     eventType,
+    status,
     ...page
-  }: ListQuotationsQueryDto): Promise<Paginated<Quotation>> {
+  }: ListQuotationsQueryDto): Promise<Paginated<ListedQuotationDto>> {
     const [items, total] = await this.quotations.findAndCount({
       ...toSkipTake(page),
       search,
       eventType,
+      status,
     });
+    const bidCounts = await this.quotations.countBids(
+      items.map((item) => item.id),
+    );
 
     this.logger.debug({
       method: 'findAll',
@@ -144,10 +150,18 @@ export class QuotationsService {
       ...page,
       total,
       eventType,
+      status,
       searched: Boolean(search),
     });
 
-    return toPaginated(items, total, page);
+    /* keep the entity instances so serialization groups still apply */
+    return toPaginated(
+      items.map((item) =>
+        Object.assign(item, { bidCount: bidCounts.get(item.id) ?? 0 }),
+      ),
+      total,
+      page,
+    );
   }
 
   /**
@@ -177,13 +191,14 @@ export class QuotationsService {
    * - Runs under a row lock, so concurrent edits apply one after another, never interleaved.
    * - `items` is the full desired list: items with an `id` are updated, new ones added, unlisted ones removed.
    * - responseDeadline ≤ eventDate is checked by the database against the merged result.
+   * - Draft: anything can change. Sent (open or closed): only responseDeadline. Awarded or cancelled: nothing.
    *
    * @param {string} id - Quotation id
    * @param {UpdateQuotationDto} dto - Fields to change, and optionally the full item list
    * @returns {Promise<Quotation>} The updated quotation
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if no quotation has this id
    * @throws {BadRequestException} Throws a `BadRequestException` with HTTP status code 400 (Bad request) if an item id is repeated or belongs to another quotation, or the dates conflict
-   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation is awarded or cancelled, or `items` is sent while a bid exists
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation is awarded or cancelled, or is sent and anything other than responseDeadline was sent
    *
    * @example
    * ```ts
@@ -393,12 +408,13 @@ export class QuotationsService {
   }
 
   /**
-   * Removes a photo record and its file.
+   * Removes a photo record and its file. Only while the quotation is a draft.
    *
    * @param {string} id - Quotation id
    * @param {string} photoId - Photo id
    * @returns {Promise<void>}
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if the quotation or photo doesn't exist
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation isn't a draft
    *
    * @example
    * ```ts
@@ -406,9 +422,9 @@ export class QuotationsService {
    * ```
    */
   async removePhoto(id: string, photoId: string): Promise<void> {
-    const removed = await this.quotations.deletePhoto(id, photoId, (key) =>
-      this.storage.remove(key),
-    );
+    const removed = await this.quotations
+      .deletePhoto(id, photoId, (key) => this.storage.remove(key))
+      .catch((error: unknown) => this.rethrowDomainError(error, 'removePhoto'));
 
     if (!removed) {
       this.logger.warn({
@@ -508,6 +524,7 @@ export class QuotationsService {
     vendorId: string,
     id: string,
   ): Promise<ReceivedQuotationDto> {
+    await this.quotations.markViewed(vendorId, id);
     const row = await this.quotations.findReceived(vendorId, id);
 
     if (!row) throw this.notFound('findReceivedById', id);
@@ -515,6 +532,68 @@ export class QuotationsService {
     const bidStatuses = await this.quotations.findBidStatuses(vendorId, [id]);
 
     return toReceived(row, bidStatuses.get(id));
+  }
+
+  /**
+   * Declines a quotation sent to the vendor, with an optional reason the admin sees.
+   *
+   * @remarks
+   * - Only while the quotation is open and the vendor hasn't bid. A declined vendor can't bid until the admin sends it again.
+   * - Idempotent: declining again keeps the first decline and reason.
+   *
+   * @param {string} vendorId - The logged-in vendor
+   * @param {string} id - Quotation id
+   * @param {string | null} reason - Optional reason
+   * @returns {Promise<ReceivedQuotationDto>} The quotation as the vendor sees it, now declined
+   * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if it wasn't sent to this vendor
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the quotation isn't open or the vendor has bid on it
+   *
+   * @example
+   * ```ts
+   * await quotationsService.decline(vendor.id, id, 'Booked that day');
+   * ```
+   */
+  async decline(
+    vendorId: string,
+    id: string,
+    reason: string | null,
+  ): Promise<ReceivedQuotationDto> {
+    const row = await this.quotations.findReceived(vendorId, id);
+    if (!row) throw this.notFound('decline', id);
+    if (row.declinedAt) return toReceived(row, undefined);
+
+    const bidStatus = (
+      await this.quotations.findBidStatuses(vendorId, [id])
+    ).get(id);
+    if (bidStatus || row.quotation!.status !== QuotationStatus.Open) {
+      this.logger.warn({
+        method: 'decline',
+        message: 'Decline not allowed',
+        quotationId: id,
+        status: row.quotation!.status,
+        bidStatus,
+      });
+      throw new ConflictException(
+        bidStatus
+          ? "You've already bid on this request"
+          : `This request is ${row.quotation!.status}`,
+      );
+    }
+
+    /* shortcut: no lock against this vendor bidding at the same instant (only its own two clicks can race); add one if declines ever trigger side effects */
+    if (await this.quotations.decline(vendorId, id, reason)) {
+      row.declinedAt = new Date();
+      row.declineReason = reason;
+    }
+
+    this.logger.log({
+      method: 'decline',
+      message: 'Quotation declined',
+      quotationId: id,
+      withReason: Boolean(reason),
+    });
+
+    return toReceived(row, undefined);
   }
 
   /**
@@ -593,11 +672,6 @@ export class QuotationsService {
       throw new ConflictException(error.message);
     }
 
-    if (error instanceof ItemsLockedError)
-      throw new ConflictException(
-        'Items can no longer change because vendors have bid on them. Cancel this quotation and create a new one instead',
-      );
-
     if (error instanceof PhotoLimitError)
       throw new BadRequestException(
         `A quotation can have at most ${error.limit} photos`,
@@ -612,7 +686,7 @@ export class QuotationsService {
   }
 }
 
-/* keep the Quotation entity instance (so @Exclude/@Expose still apply) and add receivedAt and bidStatus */
+/* keep the Quotation entity instance (so @Exclude/@Expose still apply) and add this vendor's invitation and bid state */
 const toReceived = (
   recipient: QuotationRecipient,
   bidStatus: BidStatus | undefined,
@@ -620,4 +694,6 @@ const toReceived = (
   Object.assign(recipient.quotation as Quotation, {
     receivedAt: recipient.sentAt,
     bidStatus: bidStatus ?? null,
+    viewedAt: recipient.viewedAt,
+    declinedAt: recipient.declinedAt,
   });

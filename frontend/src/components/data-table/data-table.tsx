@@ -65,7 +65,7 @@ export function DataTable<TData extends { id: string }>({
   return (
     <>
       <Table className={cn("transition-opacity", isPlaceholderData && "opacity-60")}>
-        <TableHeader className="bg-muted/50">
+        <TableHeader>
           {table.getHeaderGroups().map((group) => (
             <TableRow key={group.id} className="hover:bg-transparent">
               {group.headers.map((header) => (

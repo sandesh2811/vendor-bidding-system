@@ -20,6 +20,7 @@ export function compareBids(bids: ComparedBid[]) {
   const cheapestTotal = complete.length ? Math.min(...complete.map((bid) => Number(bid.totalAmount))) : null;
 
   return {
+    cheapestTotal,
     isCheapestItem: (quotationItemId: string, unitPrice: string) =>
       Number(unitPrice) > 0 && cheapestPerItem.get(quotationItemId) === Number(unitPrice),
     isCheapestTotal: (bid: ComparedBid) => isComplete(bid) && Number(bid.totalAmount) === cheapestTotal,

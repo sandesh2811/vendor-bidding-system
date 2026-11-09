@@ -24,6 +24,7 @@ export const QUOTATION = {
   MAX_GUESTS: 100_000,
   UNIT_MAX_LENGTH: 30,
   ITEM_NOTES_MAX_LENGTH: 1000,
+  DECLINE_REASON_MAX_LENGTH: 1000,
 } as const;
 
 /* numeric(12,2): the largest unit price a column can hold; larger line totals are a 400 (PG 22003) */

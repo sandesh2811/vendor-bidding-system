@@ -11,6 +11,7 @@ import { EventTypeBadge } from "../shared/event-type-badge";
 import { PhotosSection } from "../shared/photos-section";
 import { QuotationOverview } from "../shared/quotation-overview";
 import { QuotationSkeleton } from "../shared/quotation-skeleton";
+import { DeclineDialog } from "./decline-dialog";
 
 /* one request as the vendor sees it: event, items and photos (read-only), then the vendor's bid */
 export function ReceivedQuotationView({ id }: { id: string }) {
@@ -30,6 +31,11 @@ export function ReceivedQuotationView({ id }: { id: string }) {
             }
             description={`Received ${formatDate(quotation.receivedAt)}`}
             back={{ href: "/vendor", label: "Back to requests" }}
+            actions={
+              quotation.status === "open" &&
+              !quotation.bidStatus &&
+              !quotation.declinedAt && <DeclineDialog quotationId={quotation.id} />
+            }
             className="px-0 pt-0 pb-6"
           />
           <div className="flex flex-col gap-6">

@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -17,6 +18,7 @@ import { BidItem } from './bid-item.entity';
 
 /* one vendor's prices for one quotation; a resubmission replaces it in place */
 @Entity('bids')
+@Index('IDX_bids_vendor_id', ['vendorId'])
 @Unique(UNIQUE_CONSTRAINTS.BID_QUOTATION_VENDOR.name, [
   'quotationId',
   'vendorId',

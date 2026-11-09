@@ -17,6 +17,11 @@ export async function getReceived(id: string): Promise<ReceivedQuotationDetail> 
   return (await api.get<ReceivedQuotationDetail>(`/vendor/quotations/${id}`)).data;
 }
 
+/* idempotent: declining again keeps the first decline and reason */
+export async function declineReceived(id: string, reason: string | null): Promise<ReceivedQuotationDetail> {
+  return (await api.post<ReceivedQuotationDetail>(`/vendor/quotations/${id}/decline`, { reason })).data;
+}
+
 export const receivedPhotoUrl = (photo: QuotationPhoto) =>
   apiUrl(`/vendor/quotations/${photo.quotationId}/photos/${photo.id}`);
 

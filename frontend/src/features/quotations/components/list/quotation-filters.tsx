@@ -4,10 +4,11 @@ import { FilterBar } from "@/components/filters/filter-bar";
 import { FilterSelect } from "@/components/filters/filter-select";
 import { SearchInput } from "@/components/filters/search-input";
 import { ALL } from "@/components/filters/use-list-filters";
-import { EVENT_TYPE_LABELS } from "../../constants";
+import { EVENT_TYPE_LABELS, QUOTATION_STATUS_LABELS } from "../../constants";
 import type { useQuotationList } from "../../hooks/use-quotation-list";
 
 const eventTypeItems = { [ALL]: "All event types", ...EVENT_TYPE_LABELS };
+const statusItems = { [ALL]: "All statuses", ...QUOTATION_STATUS_LABELS };
 
 type QuotationFilterState = Pick<
   ReturnType<typeof useQuotationList>,
@@ -22,6 +23,13 @@ export function QuotationFilters({ filters, setFilter, clearFilters, hasFilters 
         onChange={(value) => setFilter("search", value)}
         placeholder="Search by title or location"
         label="Search quotations"
+      />
+      <FilterSelect
+        items={statusItems}
+        value={filters.status}
+        onChange={(value) => setFilter("status", value)}
+        label="Filter by status"
+        className="sm:w-40"
       />
       <FilterSelect
         items={eventTypeItems}

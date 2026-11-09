@@ -15,6 +15,7 @@ const helper = columnHelper<Quotation>();
 /* narrow screens keep the title (with date and location folded in) and the vendor count */
 export const quotationColumnClasses: ColumnClasses = {
   eventType: "hidden sm:table-cell",
+  bidCount: "hidden sm:table-cell",
   eventDate: "hidden md:table-cell",
   responseDeadline: "hidden lg:table-cell",
   createdAt: "hidden xl:table-cell",
@@ -57,6 +58,15 @@ export const quotationColumns = helper.columns([
   helper.accessor("recipients", {
     header: "Sent to",
     cell: ({ getValue }) => <RecipientCount count={getValue().length} />,
+  }),
+  helper.accessor("bidCount", {
+    header: "Bids",
+    cell: ({ row: { original: quotation } }) =>
+      quotation.recipients.length > 0 && (
+        <span className="text-muted-foreground tabular-nums">
+          <span className="font-medium text-foreground">{quotation.bidCount ?? 0}</span> / {quotation.recipients.length}
+        </span>
+      ),
   }),
   helper.accessor("responseDeadline", {
     header: "Respond by",

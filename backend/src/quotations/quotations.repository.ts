@@ -6,6 +6,7 @@ import {
   ILike,
   In,
   IsNull,
+  LessThan,
   MoreThanOrEqual,
   Not,
   type Repository,
@@ -52,6 +53,7 @@ export interface QuotationFilter {
   take: number;
   search?: string;
   eventType?: EventType;
+  status?: QuotationStatus;
 }
 
 /* thrown inside a transaction to roll it back; the service maps each to a 400 */
@@ -72,12 +74,6 @@ export class PhotoLimitError extends Error {
 }
 /* the quotation's status doesn't allow this action; mapped to 409 with this message */
 export class QuotationStateError extends Error {}
-/* vendors have priced the items, so the list can't change; mapped to 409 */
-export class ItemsLockedError extends Error {
-  constructor() {
-    super('Items are locked once a bid exists');
-  }
-}
 
 const FINAL_STATUSES = [QuotationStatus.Awarded, QuotationStatus.Cancelled];
 
@@ -126,6 +122,7 @@ export class QuotationsRepository {
   /**
    * Edits fields and/or reconciles the item list under a row lock, so concurrent edits serialize
    * instead of interleaving their item diffs. Returns false if the quotation doesn't exist.
+   * Once sent (not draft), only responseDeadline may change; awarded and cancelled can't change.
    */
   updateWithItems(
     id: string,
@@ -135,24 +132,33 @@ export class QuotationsRepository {
     return this.repo.manager.transaction(async (manager) => {
       if (!(await this.lock(manager, id, 'pessimistic_write'))) return false;
 
-      /* priced items can't change; the RESTRICT FK on bid_items also refuses deleting one */
-      if (items && (await manager.existsBy(Bid, { quotationId: id })))
-        throw new ItemsLockedError();
+      /* anything beyond the deadline is a draft-only edit */
+      const restricted =
+        Boolean(items) ||
+        Object.keys(changes).some((key) => key !== 'responseDeadline');
 
-      /* conditional: an awarded or cancelled quotation matches nothing. Bumps updated_at even for an items-only edit */
-      const result = await manager
+      /* conditional: the status check and the write are one statement. Bumps updated_at even for an items-only edit */
+      const query = manager
         .createQueryBuilder()
         .update(Quotation)
-        .set({ ...changes, updatedAt: () => 'now()' })
-        .where('id = :id AND status NOT IN (:...final)', {
-          id,
-          final: FINAL_STATUSES,
-        })
-        .execute();
+        .set({ ...changes, updatedAt: () => 'now()' });
+      const result = await (
+        restricted
+          ? query.where('id = :id AND status = :draft', {
+              id,
+              draft: QuotationStatus.Draft,
+            })
+          : query.where('id = :id AND status NOT IN (:...final)', {
+              id,
+              final: FINAL_STATUSES,
+            })
+      ).execute();
 
       if (!result.affected)
         throw new QuotationStateError(
-          'An awarded or cancelled quotation can no longer be edited',
+          restricted
+            ? 'Once a quotation is sent, only its response deadline can change. Cancel it and create a new one to change anything else'
+            : 'An awarded or cancelled quotation can no longer be edited',
         );
 
       if (items) await this.reconcileItems(manager, id, items);
@@ -300,8 +306,12 @@ export class QuotationsRepository {
     removeFile: (storageKey: string) => Promise<void>,
   ): Promise<boolean> {
     return this.repo.manager.transaction(async (manager) => {
-      if (!(await this.lock(manager, quotationId, 'pessimistic_write')))
-        return false;
+      const status = await this.lock(manager, quotationId, 'pessimistic_write');
+      if (!status) return false;
+      if (status !== QuotationStatus.Draft)
+        throw new QuotationStateError(
+          'Photos can be removed only while the quotation is a draft',
+        );
 
       const result = await manager
         .createQueryBuilder()
@@ -342,18 +352,21 @@ export class QuotationsRepository {
     take,
     search,
     eventType,
+    status,
   }: QuotationFilter): Promise<[Quotation[], number]> {
     /* TypeORM 1.x throws on undefined where values, so only set filters are added */
     const base: FindOptionsWhere<Quotation> = {};
     if (eventType) base.eventType = eventType;
 
+    /* every (status variant × search column) pair, OR'd: one where array, one query */
+    const statuses = status ? effectiveStatusWhere(status) : [{}];
     const pattern = search && ILike(`%${search.replace(/[\\%_]/g, '\\$&')}%`);
-    const where = pattern
-      ? [
-          { ...base, title: pattern },
-          { ...base, location: pattern },
-        ]
-      : base;
+    const columns = pattern
+      ? [{ title: pattern }, { location: pattern }]
+      : [{}];
+    const where = statuses.flatMap((variant) =>
+      columns.map((column) => ({ ...base, ...variant, ...column })),
+    );
 
     return this.repo.findAndCount({
       where,
@@ -432,6 +445,42 @@ export class QuotationsRepository {
       .getOne();
   }
 
+  /* first open only: later opens (and non-recipients) match no row */
+  async markViewed(vendorId: string, quotationId: string): Promise<void> {
+    await this.recipients.update(
+      { vendorId, quotationId, viewedAt: IsNull() },
+      { viewedAt: () => 'now()' },
+    );
+  }
+
+  /* conditional: an existing decline (and its reason) is never overwritten; false when nothing changed */
+  async decline(
+    vendorId: string,
+    quotationId: string,
+    declineReason: string | null,
+  ): Promise<boolean> {
+    const { affected } = await this.recipients.update(
+      { vendorId, quotationId, declinedAt: IsNull() },
+      { declinedAt: () => 'now()', declineReason },
+    );
+    return Boolean(affected);
+  }
+
+  /* number of bids per quotation id; quotations without bids are absent */
+  async countBids(quotationIds: string[]): Promise<Map<string, number>> {
+    if (!quotationIds.length) return new Map();
+
+    const rows = await this.repo.manager
+      .createQueryBuilder(Bid, 'bid')
+      .select('bid.quotationId', 'quotationId')
+      .addSelect('COUNT(*)::int', 'count')
+      .where({ quotationId: In(quotationIds) })
+      .groupBy('bid.quotationId')
+      .getRawMany<{ quotationId: string; count: number }>();
+
+    return new Map(rows.map((row) => [row.quotationId, row.count]));
+  }
+
   /* this vendor's bid status per quotation id; quotations without a bid are absent */
   async findBidStatuses(
     vendorId: string,
@@ -447,19 +496,19 @@ export class QuotationsRepository {
     return new Map(bids.map((bid) => [bid.quotationId, bid.status]));
   }
 
-  /* SELECT ... FOR UPDATE on the quotation row; false if it doesn't exist */
+  /* SELECT ... FOR UPDATE on the quotation row; its stored status, or null if it doesn't exist */
   private async lock(
     manager: EntityManager,
     id: string,
     mode: 'pessimistic_write',
-  ): Promise<boolean> {
+  ): Promise<QuotationStatus | null> {
     const row = await manager.findOne(Quotation, {
       where: { id },
-      select: { id: true },
+      select: { id: true, status: true },
       lock: { mode },
     });
 
-    return row !== null;
+    return row?.status ?? null;
   }
 
   private async insertItems(
@@ -527,6 +576,7 @@ export class QuotationsRepository {
   /**
    * INSERT ... SELECT from active vendors only, then checks every requested vendor is now a
    * recipient (just added, or already was). Throws UnknownVendorsError to roll back otherwise.
+   * Sending again to a vendor that declined clears the decline; other existing recipients are untouched.
    */
   private async insertRecipients(
     manager: EntityManager,
@@ -537,7 +587,9 @@ export class QuotationsRepository {
       `INSERT INTO "quotation_recipients" ("quotation_id", "vendor_id")
        SELECT $1, v."id" FROM "vendors" v
        WHERE v."id" = ANY($2::uuid[]) AND v."is_active"
-       ON CONFLICT ("quotation_id", "vendor_id") DO NOTHING
+       ON CONFLICT ("quotation_id", "vendor_id") DO UPDATE
+         SET "declined_at" = NULL, "decline_reason" = NULL
+         WHERE "quotation_recipients"."declined_at" IS NOT NULL
        RETURNING "vendor_id" AS "vendorId"`,
       [quotationId, vendorIds],
     )) as { vendorId: string }[];
@@ -561,3 +613,21 @@ export class QuotationsRepository {
       .join(', ');
   }
 }
+
+/* the stored conditions behind an effective status (see effectiveStatus on the entity) */
+const effectiveStatusWhere = (
+  status: QuotationStatus,
+): FindOptionsWhere<Quotation>[] => {
+  const today = businessToday();
+  if (status === QuotationStatus.Open)
+    return [
+      { status, responseDeadline: IsNull() },
+      { status, responseDeadline: MoreThanOrEqual(today) },
+    ];
+  if (status === QuotationStatus.Closed)
+    return [
+      { status },
+      { status: QuotationStatus.Open, responseDeadline: LessThan(today) },
+    ];
+  return [{ status }];
+};
