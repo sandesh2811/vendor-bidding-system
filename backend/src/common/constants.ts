@@ -31,6 +31,10 @@ export const BID = {
   MAX_UNIT_PRICE: 9_999_999_999.99,
 } as const;
 
+export const PAYMENT = {
+  MAX_AMOUNT: BID.MAX_UNIT_PRICE,
+} as const;
+
 export const QUOTATION_PHOTO = {
   MAX_PER_QUOTATION: 10,
   MAX_BYTES: 5 * 1024 * 1024,
@@ -99,6 +103,15 @@ export const CHECK_CONSTRAINTS = {
     name: 'CHK_bid_items_unit_price_non_negative',
     message: 'unitPrice must be 0 or more',
   },
+  /* one rule for both overpaying and lowering the amount below what's paid */
+  BOOKING_PAID: {
+    name: 'CHK_bookings_paid_within_amount',
+    message: "Payments can't exceed the booking amount",
+  },
+  PAYMENT_AMOUNT: {
+    name: 'CHK_payments_amount_positive',
+    message: 'amount must be more than 0',
+  },
 } as const;
 
 export enum UserRole {
@@ -142,4 +155,18 @@ export enum BookingStatus {
   Confirmed = 'confirmed',
   Completed = 'completed',
   Cancelled = 'cancelled',
+}
+
+export enum PaymentStatus {
+  Unpaid = 'unpaid',
+  Partial = 'partial',
+  Paid = 'paid',
+}
+
+export enum PaymentMethod {
+  Cash = 'cash',
+  BankTransfer = 'bank_transfer',
+  Cheque = 'cheque',
+  Esewa = 'esewa',
+  Khalti = 'khalti',
 }

@@ -7,7 +7,7 @@ A vendor puts one price on every item of a quotation it was sent. Mero Event adm
 ## Overview
 
 - **Quotations**: a bid belongs to a quotation and a vendor that is a recipient of it. Bids are accepted only while the quotation's effective status is `open` (see `quotations/README.md`).
-- **Bookings**: `bookings/entities/booking.entity.ts` holds the winning bid. It has no module of its own yet. Bookings are created only by `POST /bids/:id/select`.
+- **Bookings**: `bookings/entities/booking.entity.ts` holds the winning bid (see `bookings/README.md`). Bookings are created only by `POST /bids/:id/select`.
 - **Auth**: vendor routes use `@Auth(UserRole.Vendor)` and `@CurrentVendor()`. Admin routes use `@Auth(UserRole.Admin)`.
 
 ## Core working

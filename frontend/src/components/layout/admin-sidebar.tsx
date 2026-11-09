@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronsUpDownIcon, FileTextIcon, LogOutIcon, StoreIcon } from "lucide-react";
+import { ChevronsUpDownIcon, FileTextIcon, HandCoinsIcon, LogOutIcon, StoreIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,6 +34,7 @@ import { initials } from "@/lib/format";
 
 export const ADMIN_NAV = [
   { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon },
+  { title: "Bookings", href: "/admin/bookings", icon: HandCoinsIcon },
   { title: "Vendors", href: "/admin/vendors", icon: StoreIcon },
 ] as const;
 

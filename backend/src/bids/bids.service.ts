@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import type { Booking } from '../bookings/entities/booking.entity';
 import { QuotationStatus } from '../common/constants';
+import { formatCents, toCents } from '../common/money';
 import { QuotationStateError } from '../quotations/quotations.repository';
 import { BidsRepository, type NewBidLine } from './bids.repository';
 import type { SubmitBidDto } from './dto/submit-bid.dto';
@@ -241,9 +242,3 @@ export class BidsService {
     return new NotFoundException('Quotation not found');
   }
 }
-
-/* NPR with 2 decimals as integer cents: exact, unlike float math. unitPrice has at most 2 decimals (DTO) */
-const toCents = (amount: number): bigint => BigInt(Math.round(amount * 100));
-
-const formatCents = (cents: bigint): string =>
-  `${cents / 100n}.${(cents % 100n).toString().padStart(2, '0')}`;

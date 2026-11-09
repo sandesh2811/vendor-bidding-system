@@ -22,3 +22,20 @@ export function IsNotPastDate(options?: ValidationOptions): PropertyDecorator {
       },
     });
 }
+
+/* for YYYY-MM-DD strings (pair with @IsISO8601({ strict: true })): rejects dates after today in BUSINESS_TIME_ZONE */
+export function IsNotFutureDate(
+  options?: ValidationOptions,
+): PropertyDecorator {
+  return (target, propertyName) =>
+    registerDecorator({
+      name: 'isNotFutureDate',
+      target: target.constructor,
+      propertyName: String(propertyName),
+      options: { message: '$property must not be in the future', ...options },
+      validator: {
+        validate: (value: unknown) =>
+          typeof value === 'string' && value <= businessToday(),
+      },
+    });
+}
