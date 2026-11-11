@@ -128,7 +128,7 @@ function ComparisonTable({ quotation, bids }: { quotation: QuotationDetail; bids
     <TableRow className="hover:bg-transparent">
       <TableHead className={cn(sticky, "pl-4 text-xs text-muted-foreground")}>{label}</TableHead>
       {columns.map(({ recipient, bid }) => (
-        <TableCell key={recipient.id} className={cn("align-top whitespace-normal", columnTone(bid))}>
+        <TableCell key={recipient.id} className={cn("align-top break-words whitespace-normal", columnTone(bid))}>
           {bid ? render(bid) : <span className="text-muted-foreground">{noBid(recipient)}</span>}
         </TableCell>
       ))}
@@ -144,12 +144,13 @@ function ComparisonTable({ quotation, bids }: { quotation: QuotationDetail; bids
           Lowest price per item. Highlights are hints; you make the choice.
         </p>
       </div>
-      <Table>
+      {/* fixed layout with equal vendor columns, so cells (and the Select buttons) don't size to their content */}
+      <Table className="w-max min-w-full table-fixed">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className={cn(sticky, "min-w-36 pl-4 sm:min-w-52")}>Item</TableHead>
+            <TableHead className={cn(sticky, "w-36 pl-4 sm:w-56")}>Item</TableHead>
             {columns.map(({ recipient, bid }) => (
-              <TableHead key={recipient.id} className={cn("min-w-44 py-3 align-top", columnTone(bid))}>
+              <TableHead key={recipient.id} className={cn("w-52 py-3 align-top", columnTone(bid))}>
                 <div className="truncate text-sm font-medium text-foreground">{recipient.vendor.name}</div>
                 <div className="mt-1">
                   {bid ? (

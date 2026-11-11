@@ -72,7 +72,7 @@ function BookingDetailContent({ booking }: { booking: BookingDetail }) {
         actions={
           <>
             <BookingStatusActions booking={booking} />
-            {!cancelled && (
+            {booking.status === "confirmed" && (
               <Button variant="outline" onClick={() => setDialog("amount")}>
                 <PencilIcon data-icon="inline-start" />
                 Edit amount
@@ -105,6 +105,7 @@ function BookingDetailContent({ booking }: { booking: BookingDetail }) {
                 variant="ghost"
                 size="icon-sm"
                 aria-label={`Delete payment of ${formatMoney(payment.amount)}`}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => setDeleting(payment)}
               >
                 <Trash2Icon />

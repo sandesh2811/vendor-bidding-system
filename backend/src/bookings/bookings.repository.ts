@@ -100,14 +100,17 @@ export class BookingsRepository {
 
   /**
    * One conditional UPDATE; false when no row matched (unknown, cancelled, or a status move that
-   * isn't allowed). A cancelled booking never changes; a status change applies only from confirmed,
-   * or to the status it already has (idempotent). The DB CHECK rejects an amount below what's paid.
+   * isn't allowed). A cancelled booking never changes; the amount changes only while confirmed; a
+   * status change applies only from confirmed, or to the status it already has (idempotent). The DB
+   * CHECK rejects an amount below what's paid.
    */
   async update(id: string, changes: BookingChanges): Promise<boolean> {
     const { status } = changes;
-    /* repeating "cancel" alone is a no-op; anything else on a cancelled booking must not match */
+    const amountChange = changes.amount !== undefined;
+    /* repeating "cancel" alone is a no-op; anything else on a cancelled booking must not match, and an amount change needs confirmed */
     const repeatable =
       status &&
+      !amountChange &&
       (status !== BookingStatus.Cancelled || Object.keys(changes).length === 1);
 
     const where: FindOptionsWhere<Booking> = {
@@ -118,7 +121,9 @@ export class BookingsRepository {
               ? [BookingStatus.Confirmed, status]
               : [BookingStatus.Confirmed],
           )
-        : Not(BookingStatus.Cancelled),
+        : amountChange
+          ? BookingStatus.Confirmed
+          : Not(BookingStatus.Cancelled),
     };
 
     const { affected } = await this.bookings.update(where, changes);

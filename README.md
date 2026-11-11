@@ -89,6 +89,26 @@ Reset the local database with `docker compose down -v`, then run the migrations 
 | `pnpm seed` | backend | Demo data, development only |
 | `pnpm build` | frontend | Production build |
 
-## Project docs
+## Known limits
 
-Features, data model, workflow, design decisions, the demo script and future scope are in [docs/README.md](docs/README.md). Each backend module also has its own `README.md`.
+- Photos are stored on local disk, so a second server or a container restart loses them.
+- Logout doesn't revoke the JWT, so a stolen cookie works until it expires (7 days).
+- No password reset, no login rate limiting and no audit log yet.
+- No notifications: vendors only see new requests when they log in.
+- One winner per quotation, and a bid is overwritten when the vendor edits it (no history).
+- Retrying a payment request can record it twice (overpaying is still blocked by the database).
+- No automated tests.
+
+## Future scope
+
+1. **Notifications** by email, later SMS: request sent, deadline near, bid selected, payment recorded.
+2. **Vendor invites and password reset by email**, so admins stop sharing passwords by hand.
+3. **Object storage** (S3 or Supabase) for photos and vendor documents.
+4. **Award per item**, so one event can use several vendors.
+5. **Vendor ratings and history** in the bid comparison, so "best" means more than "cheapest".
+6. **Payment schedules, receipts and online payouts** (eSewa, Khalti).
+7. **Reports**: spend per event and vendor, win rates, bid spread.
+
+## Module notes
+
+Each backend module (`backend/src/<module>/README.md`) has a short README with its routes, rules and design decisions.

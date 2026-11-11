@@ -54,7 +54,7 @@ export function ChangeDeadlineDialog({ quotation }: { quotation: QuotationDetail
           <DialogHeader>
             <DialogTitle>Change response deadline</DialogTitle>
             <DialogDescription>
-              Once sent, only the deadline can change. Moving it later reopens bidding if it had passed.
+              Once sent, only the deadline can change. Moving it later reopens bidding if it closed because the deadline passed; a quotation you closed yourself stays closed.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">

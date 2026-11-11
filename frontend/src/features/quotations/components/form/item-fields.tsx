@@ -37,7 +37,7 @@ export function ItemFields({ index, onRemove, canRemove }: { index: number; onRe
         aria-label={`Remove item ${index + 1}`}
         disabled={!canRemove}
         onClick={onRemove}
-        className="absolute top-2 right-2 text-muted-foreground hover:text-destructive sm:static"
+        className="absolute top-2 right-2 text-destructive hover:bg-destructive/10 hover:text-destructive sm:static"
       >
         <Trash2Icon />
       </Button>

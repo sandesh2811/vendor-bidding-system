@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
-import { toast } from "sonner";
 import { DatePicker } from "@/components/form/date-picker";
 import { FormField } from "@/components/form/form-field";
 import { PendingButton } from "@/components/form/pending-button";
@@ -60,14 +59,11 @@ function BidForm({ quotation, bid }: { quotation: ReceivedQuotationDetail; bid: 
   const total = quotation.items.reduce((sum, _, index) => sum + lineTotal(index), 0);
 
   function onSubmit(values: BidFormValues) {
-    mutation.mutate(
-      {
-        items: values.items.map((item) => ({ quotationItemId: item.quotationItemId, unitPrice: Number(item.unitPrice) })),
-        notes: values.notes || null,
-        validUntil: values.validUntil || null,
-      },
-      { onSuccess: () => toast.success(bid ? "Bid updated" : "Bid submitted") },
-    );
+    mutation.mutate({
+      items: values.items.map((item) => ({ quotationItemId: item.quotationItemId, unitPrice: Number(item.unitPrice) })),
+      notes: values.notes || null,
+      validUntil: values.validUntil || null,
+    });
   }
 
   return (

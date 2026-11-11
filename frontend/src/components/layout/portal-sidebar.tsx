@@ -43,9 +43,9 @@ import { initials } from "@/lib/format";
 type NavItem = { title: string; href: string; icon: LucideIcon; matches?: (path: string) => boolean };
 
 export const ADMIN_NAV: NavItem[] = [
+  { title: "Vendors", href: "/admin/vendors", icon: StoreIcon },
   { title: "Quotations", href: "/admin/quotations", icon: FileTextIcon },
   { title: "Bookings", href: "/admin/bookings", icon: HandCoinsIcon },
-  { title: "Vendors", href: "/admin/vendors", icon: StoreIcon },
 ];
 
 export const VENDOR_NAV: NavItem[] = [

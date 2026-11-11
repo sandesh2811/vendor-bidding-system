@@ -2,7 +2,6 @@
 
 import { BanIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { PendingButton } from "@/components/form/pending-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,12 +25,7 @@ export function DeclineDialog({ quotationId }: { quotationId: string }) {
   const mutation = useDeclineQuotation(quotationId);
 
   function decline() {
-    mutation.mutate(reason.trim() || null, {
-      onSuccess: () => {
-        toast.success("Request declined");
-        setOpen(false);
-      },
-    });
+    mutation.mutate(reason.trim() || null, { onSuccess: () => setOpen(false) });
   }
 
   return (
