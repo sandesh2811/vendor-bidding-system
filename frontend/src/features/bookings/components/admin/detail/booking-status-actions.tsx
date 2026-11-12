@@ -45,7 +45,7 @@ export function BookingStatusActions({ booking }: { booking: BookingDetail }) {
         description={
           confirming === "cancelled"
             ? "No more payments or amount changes. Payments already recorded stay on record. This can't be undone."
-            : "The event is done. You can still record payments and adjust the amount."
+            : "The event is done and the amount is locked. You can still record payments."
         }
         confirmLabel={confirming === "cancelled" ? "Cancel booking" : "Mark completed"}
         destructive={confirming === "cancelled"}

@@ -19,8 +19,8 @@ A booking is the winning bid of a quotation: what Mero Event owes the vendor, wh
   - Two concurrent payments queue on the row the `UPDATE` touches; the second re-checks against the committed total and fails the CHECK (400).
   - The same CHECK rejects lowering `amount` below what's paid, including against a payment saved at the same moment.
 - **Status**: `confirmed → completed | cancelled`, both final.
-  - `PATCH` is one conditional `UPDATE`: `status IN ('confirmed', <target>)` for a status change (repeating it is a no-op), `status <> 'cancelled'` otherwise. 0 rows → one read to tell 404 from 409.
-  - A cancelled booking can't change or take payments; its payments stay on record. A completed one still takes amount/notes changes and payments.
+  - `PATCH` is one conditional `UPDATE`: `status IN ('confirmed', <target>)` for a status change (repeating it is a no-op), `status = 'confirmed'` for an amount change, `status <> 'cancelled'` otherwise. 0 rows → one read to tell 404 from 409.
+  - A cancelled booking can't change or take payments; its payments stay on record. A completed one still takes notes changes and payments, but not amount changes (409).
   - An amount change requires `notes` (the reason), which replaces the booking's notes.
 - **Payments** are append-only. A wrong one is deleted: the delete and the decrement run in one transaction, and only the delete that removed the row decrements, so deleting twice is a no-op (204). Payment POSTs are not retry-safe yet (see the `shortcut:` on the route).
 - **Isolation**: vendor reads filter by `(id, vendor_id)` from the session; another vendor's booking is 404. `Booking.notes`, `Payment.note` and `Payment.recordedById` are admin-only (`@Expose({ groups: ['admin'] })`).

@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { EventFacts } from "@/features/quotations/components/shared/event-facts";
 import { formatDate, formatMoney } from "@/lib/format";
 import { vendorBookingQuery } from "../../api/bookings.api";
+import type { QuotationItem } from "@/features/quotations/types";
+import { cn } from "@/lib/utils";
 import type { VendorBookingDetail } from "../../types";
 import { BookingSkeleton } from "../shared/booking-skeleton";
 import { BookingStatusBadge, PaymentStatusBadge } from "../shared/booking-status-badge";
@@ -39,7 +41,11 @@ export function VendorBookingDetailView({ id }: { id: string }) {
             <SectionCard title="Event">
               <EventFacts quotation={booking.quotation} />
             </SectionCard>
-            <SectionCard title="Agreed items" contentClassName="px-0">
+            <SectionCard
+              title="Agreed items"
+              description={`From your winning bid, last updated ${formatDate(booking.bid.updatedAt)}`}
+              contentClassName="px-0"
+            >
               <AgreedItems booking={booking} />
             </SectionCard>
             <SectionCard title="Payments" contentClassName="px-0">
@@ -52,42 +58,103 @@ export function VendorBookingDetailView({ id }: { id: string }) {
   );
 }
 
-function AgreedItems({ booking: { quotation, bid } }: { booking: VendorBookingDetail }) {
+function AgreedItems({ booking }: { booking: VendorBookingDetail }) {
+  const { quotation, bid } = booking;
   const lines = new Map(bid.items.map((line) => [line.quotationItemId, line]));
+  /* Mero Event can adjust the amount after booking; show both when they differ */
+  const adjusted = Number(booking.amount) !== Number(bid.totalAmount);
+  const rows = quotation.items.map((item) => {
+    const line = lines.get(item.id);
+    return { item, line, offered: Number(line?.unitPrice ?? 0) > 0 };
+  });
+  const quantity = (item: QuotationItem) => `${item.quantity.toLocaleString()}${item.unit ? ` ${item.unit}` : ""}`;
+  const totals = [
+    { label: "Bid total", value: bid.totalAmount, strong: !adjusted },
+    ...(adjusted ? [{ label: "Booking amount (adjusted by Mero Event)", value: booking.amount, strong: true }] : []),
+  ];
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="pl-6 text-xs text-muted-foreground">Item</TableHead>
-          <TableHead className="text-right text-xs text-muted-foreground">Qty</TableHead>
-          <TableHead className="text-right text-xs text-muted-foreground">Unit price</TableHead>
-          <TableHead className="pr-6 text-right text-xs text-muted-foreground">Line total</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {quotation.items.map((item) => (
-          <TableRow key={item.id} className="hover:bg-transparent">
-            <TableCell className="pl-6 font-medium whitespace-normal">{item.name}</TableCell>
-            <TableCell className="text-right tabular-nums">
-              {item.quantity.toLocaleString()}
-              {item.unit && <span className="ml-1 text-muted-foreground">{item.unit}</span>}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">{formatMoney(lines.get(item.id)?.unitPrice ?? 0)}</TableCell>
-            <TableCell className="pr-6 text-right tabular-nums">
-              {formatMoney(lines.get(item.id)?.lineTotal ?? 0)}
-            </TableCell>
-          </TableRow>
+    <div className="flex flex-col">
+      {/* phones: one stacked row per item */}
+      <ul className="divide-y border-t sm:hidden">
+        {rows.map(({ item, line, offered }) => (
+          <li key={item.id} className="flex items-start justify-between gap-4 px-4 py-3">
+            <div className="min-w-0">
+              <p className="font-medium break-words">{item.name}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {quantity(item)}
+                {offered && ` × ${formatMoney(line?.unitPrice ?? 0)}`}
+              </p>
+              {item.notes && <p className="mt-0.5 text-xs break-words text-muted-foreground">{item.notes}</p>}
+            </div>
+            <span className={cn("shrink-0 tabular-nums", offered ? "font-medium" : "text-sm text-muted-foreground")}>
+              {offered ? formatMoney(line?.lineTotal ?? 0) : "Not offered"}
+            </span>
+          </li>
         ))}
-      </TableBody>
-      <TableFooter className="bg-transparent">
-        <TableRow className="hover:bg-transparent">
-          <TableCell colSpan={3} className="pl-6 font-medium">
-            Bid total
-          </TableCell>
-          <TableCell className="pr-6 text-right font-semibold tabular-nums">{formatMoney(bid.totalAmount)}</TableCell>
-        </TableRow>
-      </TableFooter>
-    </Table>
+        {totals.map((total) => (
+          <li key={total.label} className="flex items-baseline justify-between gap-4 px-4 py-3">
+            <span className={cn("text-sm", !total.strong && "text-muted-foreground")}>{total.label}</span>
+            <span className={cn("tabular-nums", total.strong ? "font-semibold" : "text-muted-foreground")}>
+              {formatMoney(total.value)}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="pl-6">Item</TableHead>
+              <TableHead className="text-right">Quantity</TableHead>
+              <TableHead className="text-right">Unit price</TableHead>
+              <TableHead className="pr-6 text-right">Line total</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(({ item, line, offered }) => (
+              <TableRow key={item.id} className="hover:bg-transparent">
+                <TableCell className="py-3 pl-6 whitespace-normal">
+                  <div className="font-medium">{item.name}</div>
+                  {item.notes && <div className="text-xs text-muted-foreground">{item.notes}</div>}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{quantity(item)}</TableCell>
+                <TableCell className="text-right text-muted-foreground tabular-nums">
+                  {offered ? formatMoney(line?.unitPrice ?? 0) : "Not offered"}
+                </TableCell>
+                <TableCell className="pr-6 text-right font-medium tabular-nums">
+                  {offered ? formatMoney(line?.lineTotal ?? 0) : <span className="text-muted-foreground">None</span>}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter className="bg-transparent">
+            {totals.map((total) => (
+              <TableRow key={total.label} className="hover:bg-transparent">
+                <TableCell colSpan={3} className={cn("pl-6", total.strong ? "font-medium" : "text-muted-foreground")}>
+                  {total.label}
+                </TableCell>
+                <TableCell
+                  className={cn(
+                    "pr-6 text-right tabular-nums",
+                    total.strong ? "font-semibold" : "text-muted-foreground",
+                  )}
+                >
+                  {formatMoney(total.value)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableFooter>
+        </Table>
+      </div>
+
+      {bid.notes && (
+        <div className="mx-4 mt-4 rounded-lg bg-muted/50 px-4 py-3 sm:mx-6">
+          <p className="text-xs text-muted-foreground">Your notes on the bid</p>
+          <p className="text-sm break-words whitespace-pre-line">{bid.notes}</p>
+        </div>
+      )}
+    </div>
   );
 }

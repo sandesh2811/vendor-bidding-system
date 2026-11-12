@@ -41,7 +41,7 @@ export default function LoginPage() {
       <main className="flex flex-1 items-center justify-center px-6 pb-16">
         <div className="w-full max-w-sm">
           <div className="mb-8 space-y-2">
-            <h1 className="font-display text-4xl leading-tight tracking-normal">Sign in</h1>
+            <h1 className="text-2xl font-semibold">Sign in</h1>
             <p className="text-sm text-muted-foreground">
               Request quotes, compare bids and book vendors. For Mero Event staff and partner vendors.
             </p>

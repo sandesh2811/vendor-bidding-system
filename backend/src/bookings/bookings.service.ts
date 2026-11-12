@@ -86,7 +86,7 @@ export class BookingsService {
    *
    * @remarks
    * - One conditional UPDATE, no locks. Idempotent: the same request again leaves the same booking.
-   * - `confirmed → completed | cancelled`; both are final. A cancelled booking can't change at all; a completed one still takes amount and notes changes.
+   * - `confirmed → completed | cancelled`; both are final. A cancelled booking can't change at all; a completed one still takes notes changes, but not the amount.
    * - The amount can't go below what's paid: a DB CHECK rejects it, even against a payment saved at the same moment.
    * - An empty body changes nothing and returns the current booking.
    *
@@ -94,7 +94,7 @@ export class BookingsService {
    * @param {UpdateBookingDto} dto - amount (requires notes), status and/or notes
    * @returns {Promise<Booking>} The updated booking with its payments
    * @throws {NotFoundException} Throws a `NotFoundException` with HTTP status code 404 (Not found) if no booking has this id
-   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the booking is cancelled, or completed and asked to change status
+   * @throws {ConflictException} Throws a `ConflictException` with HTTP status code 409 (Conflict) if the booking is cancelled, or completed and asked to change status or amount
    * @throws {BadRequestException} Throws a `BadRequestException` with HTTP status code 400 (Bad request) if the amount is below what's already paid
    *
    * @example
@@ -129,7 +129,9 @@ export class BookingsService {
       throw new ConflictException(
         current.status === BookingStatus.Cancelled
           ? 'This booking is cancelled and can no longer change'
-          : `This booking is already ${current.status}`,
+          : changes.amount !== undefined
+            ? 'The amount can change only while the booking is confirmed'
+            : `This booking is already ${current.status}`,
       );
     }
 
