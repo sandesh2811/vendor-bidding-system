@@ -1,11 +1,16 @@
 import { z } from "zod";
 import { businessToday } from "@/lib/dates";
+import { formatMoney, MONEY_MAX } from "@/lib/format";
 import { BOOKING_LIMITS as L, PAYMENT_METHODS } from "../constants";
 
 /* mirror CreatePaymentDto / UpdateBookingDto; the API stays the authority. Amounts are strings so "" means "not entered" */
 const AMOUNT = /^\d+(\.\d{1,2})?$/;
 
-const amount = z.string().trim().regex(AMOUNT, "Enter an amount with at most 2 decimals");
+const amount = z
+  .string()
+  .trim()
+  .regex(AMOUNT, "Enter an amount with at most 2 decimals")
+  .refine((value) => Number(value) <= MONEY_MAX, `At most ${formatMoney(MONEY_MAX)}`);
 
 export const paymentFormSchema = (pending: number) =>
   z.object({

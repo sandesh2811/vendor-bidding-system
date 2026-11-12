@@ -34,7 +34,7 @@ import {
 } from '../dto/list-quotations.dto';
 import { PhotoParamDto } from '../dto/photo-param.dto';
 import { UpdateQuotationDto } from '../dto/update-quotation.dto';
-import { toStreamableFile } from './photo-response';
+import { toStreamableFile } from '../../common/storage/to-streamable-file';
 import type { QuotationPhoto } from '../entities/quotation-photo.entity';
 import type { Quotation } from '../entities/quotation.entity';
 import { QuotationsDocs } from '../quotations.docs';

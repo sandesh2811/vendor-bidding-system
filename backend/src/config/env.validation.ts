@@ -17,8 +17,9 @@ export enum NodeEnv {
 }
 
 export class EnvironmentVariables {
+  /* required, no default: a deploy that forgets it must fail, not run with dev settings (non-secure cookie, Swagger) */
   @IsEnum(NodeEnv)
-  NODE_ENV: NodeEnv = NodeEnv.Development;
+  NODE_ENV: NodeEnv;
 
   @IsInt()
   @Min(1)
@@ -38,6 +39,12 @@ export class EnvironmentVariables {
 
   @IsUrl({ require_tld: false })
   FRONTEND_ORIGIN: string;
+
+  /* proxy hops in front of the API (express `trust proxy`); 0 = direct, so req.ip, and the rate limit, is the client */
+  @IsInt()
+  @Min(0)
+  @Max(10)
+  TRUST_PROXY: number = 0;
 
   /* root for uploaded files (quotation photos); relative paths resolve from the process cwd */
   @IsString()

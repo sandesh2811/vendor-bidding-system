@@ -5,8 +5,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory, Reflector } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
 import { ContextLogger } from './common/context-logger';
 import { AppModule } from './app.module';
 import {
@@ -15,16 +18,39 @@ import {
   API_PREFIX,
   SWAGGER_PATH,
 } from './common/constants';
+import { apiRateLimit, loginRateLimit } from './common/rate-limit';
 import { type EnvironmentVariables, NodeEnv } from './config/env.validation';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
   const config =
     app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
   const isProduction =
     config.get('NODE_ENV', { infer: true }) === NodeEnv.Production;
 
   app.useLogger(new ContextLogger({ json: isProduction }));
+  app.set('trust proxy', config.get('TRUST_PROXY', { infer: true }));
+
+  /* same-site CORP: the frontend loads photos with <img> from another port (same site, different origin) */
+  const secureHeaders = helmet({
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
+  /* Swagger UI (non-production only) runs inline scripts that the default CSP blocks */
+  const docsHeaders = helmet({ contentSecurityPolicy: false });
+  app.use((req: Request, res: Response, next: NextFunction) =>
+    req.path.startsWith(`/${SWAGGER_PATH}`)
+      ? docsHeaders(req, res, next)
+      : secureHeaders(req, res, next),
+  );
+
+  /* registered here, so they run before the auth middleware: unauthenticated floods are limited too */
+  app.use(`/${API_PREFIX}`, apiRateLimit());
+  app.use(
+    `/${API_PREFIX}/v${API_DEFAULT_VERSION}/auth/login`,
+    loginRateLimit(),
+  );
 
   app.setGlobalPrefix(API_PREFIX);
   app.enableVersioning({

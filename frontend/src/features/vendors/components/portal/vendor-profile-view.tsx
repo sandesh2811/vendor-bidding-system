@@ -13,8 +13,9 @@ import { vendorProfileQuery } from "../../api/vendor-portal.api";
 import { CATEGORY_LABELS } from "../../constants";
 import { VendorStatusBadge } from "../shared/vendor-status-badge";
 import { EditProfileSheet } from "./edit-profile-sheet";
+import { PaymentDetailsCard } from "./payment-details-card";
 
-/* the vendor's details; it can edit its business details, while emails, password and category stay with Mero Event */
+/* the vendor's details and payout details; it edits its business and payment details, while emails, password and category stay with Mero Event */
 export function VendorProfileView() {
   const query = useQuery(vendorProfileQuery);
   const { data: user } = useQuery(meQuery);
@@ -50,16 +51,19 @@ export function VendorProfileView() {
               }
               className="px-0 pt-0 pb-6"
             />
-            <SectionCard title="Profile">
-              <dl className="grid gap-5 sm:grid-cols-2">
-                {facts.map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="text-sm font-medium break-words">{value || <span className="font-normal text-muted-foreground">Not added</span>}</dd>
-                  </div>
-                ))}
-              </dl>
-            </SectionCard>
+            <div className="flex flex-col gap-6 md:gap-8">
+              <SectionCard title="Profile">
+                <dl className="grid gap-5 sm:grid-cols-2">
+                  {facts.map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-xs text-muted-foreground">{label}</dt>
+                      <dd className="text-sm font-medium break-words">{value || <span className="font-normal text-muted-foreground">Not added</span>}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </SectionCard>
+              <PaymentDetailsCard />
+            </div>
             <EditProfileSheet vendor={vendor} open={editing} onOpenChange={setEditing} />
           </>
         );

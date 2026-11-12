@@ -22,7 +22,9 @@ export const AuthDocs = {
 
   logout: () =>
     applyDecorators(
-      ApiOperation({ summary: 'Clear the session cookie' }),
+      ApiOperation({
+        summary: 'Revoke the session and clear the cookie',
+      }),
       ApiNoContentResponse(),
     ),
 

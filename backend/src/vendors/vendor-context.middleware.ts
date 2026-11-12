@@ -7,7 +7,7 @@ import type { NextFunction, Response } from 'express';
 import type { AuthedRequest } from '../auth/user-context.middleware';
 import { UserRole } from '../common/constants';
 import { getRequestContext } from '../common/request-context';
-import { VendorsService } from './vendors.service';
+import { VendorsService } from './services/vendors.service';
 
 /* Runs after UserContextMiddleware: a vendor user passes only with an active vendor, which is attached as user.vendor */
 @Injectable()

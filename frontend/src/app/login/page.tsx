@@ -1,35 +1,42 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { TextField } from "@/components/form/text-field";
 import { BrandMark } from "@/components/layout/brand-mark";
+import { LinkButton } from "@/components/layout/link-button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import { type LoginFormValues, loginSchema } from "@/features/auth/login.schema";
 import { homeFor } from "@/features/auth/require-role";
-import { login, meQuery } from "@/lib/api";
+import { errorMessage, login, meQuery } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: user } = useQuery(meQuery);
+  /* signing in replaces any current session (the API revokes it), so nothing cached for the previous account may survive */
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: (loggedIn) => queryClient.setQueryData(meQuery.queryKey, loggedIn),
+    /* wrong credentials and rate limits are shown in the form, not as a toast */
+    meta: { inlineError: true },
+    onSuccess: (loggedIn) => {
+      queryClient.clear();
+      queryClient.setQueryData(meQuery.queryKey, loggedIn);
+      router.replace(homeFor(loggedIn));
+    },
   });
 
-  /* already signed in, or just signed in: go to that user's portal */
-  useEffect(() => {
-    if (user) router.replace(homeFor(user));
-  }, [user, router]);
-
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    mutation.mutate({ email: String(form.get("email")), password: String(form.get("password")) });
-  }
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    mode: "onTouched",
+    defaultValues: { email: "", password: "" },
+  });
 
   return (
     <div className="flex min-h-svh flex-col bg-sidebar">
@@ -47,34 +54,53 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={onSubmit}>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" name="email" type="email" autoComplete="email" required className="h-10 bg-background" />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Input
-                  id="password"
+          {/* already signed in: the form stays usable so another account can sign in */}
+          {user && !mutation.isSuccess && (
+            <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border bg-background px-4 py-3 text-sm">
+              <span className="min-w-0 truncate">
+                Signed in as <span className="font-medium">{user.email}</span>
+              </span>
+              <LinkButton variant="outline" size="sm" href={homeFor(user)}>
+                Continue
+              </LinkButton>
+            </div>
+          )}
+
+          <FormProvider {...form}>
+            <form noValidate onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+              <FieldGroup>
+                {mutation.isError && (
+                  <Alert variant="destructive" role="alert">
+                    <CircleAlertIcon />
+                    <AlertDescription>{errorMessage(mutation.error)}</AlertDescription>
+                  </Alert>
+                )}
+                <TextField<LoginFormValues>
+                  name="email"
+                  label="Email"
+                  type="email"
+                  autoComplete="email"
+                  inputClassName="h-10 bg-background"
+                />
+                <TextField<LoginFormValues>
                   name="password"
+                  label="Password"
                   type="password"
                   autoComplete="current-password"
-                  required
-                  className="h-10 bg-background"
+                  inputClassName="h-10 bg-background"
                 />
-              </Field>
-              <Field>
-                <Button type="submit" size="lg" className="h-10" disabled={mutation.isPending || mutation.isSuccess}>
-                  {(mutation.isPending || mutation.isSuccess) && <Spinner data-icon="inline-start" />}
-                  Sign in
-                </Button>
-                <FieldDescription className="text-center">
-                  Vendor without an account? Ask your Mero Event contact for a login.
-                </FieldDescription>
-              </Field>
-            </FieldGroup>
-          </form>
+                <Field>
+                  <Button type="submit" size="lg" className="h-10" disabled={mutation.isPending || mutation.isSuccess}>
+                    {(mutation.isPending || mutation.isSuccess) && <Spinner data-icon="inline-start" />}
+                    Sign in
+                  </Button>
+                  <FieldDescription className="text-center">
+                    Vendor without an account? Ask your Mero Event contact for a login.
+                  </FieldDescription>
+                </Field>
+              </FieldGroup>
+            </form>
+          </FormProvider>
         </div>
       </main>
 

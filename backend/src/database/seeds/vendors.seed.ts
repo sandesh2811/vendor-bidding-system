@@ -1,7 +1,7 @@
 import type { INestApplicationContext } from '@nestjs/common';
 import { VendorCategory } from '../../common/constants';
 import type { CreateVendorDto } from '../../vendors/dto/create-vendor.dto';
-import { VendorsService } from '../../vendors/vendors.service';
+import { VendorsService } from '../../vendors/services/vendors.service';
 
 const DEMO_PASSWORD = 'Vendor@12345';
 

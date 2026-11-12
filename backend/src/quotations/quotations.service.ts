@@ -40,14 +40,12 @@ import {
   UnknownVendorsError,
 } from './quotations.repository';
 import {
-  PHOTO_STORAGE,
-  type PhotoStorage,
-  type StoredFile,
-} from './storage/photo-storage';
+  FILE_STORAGE,
+  type FileStorage,
+  type TypedFile,
+} from '../common/storage/file-storage';
 
-export interface PhotoFile extends StoredFile {
-  mimeType: string;
-}
+export type PhotoFile = TypedFile;
 
 @Injectable()
 export class QuotationsService {
@@ -55,7 +53,7 @@ export class QuotationsService {
 
   constructor(
     private readonly quotations: QuotationsRepository,
-    @Inject(PHOTO_STORAGE) private readonly storage: PhotoStorage,
+    @Inject(FILE_STORAGE) private readonly storage: FileStorage,
   ) {}
 
   /**
@@ -645,7 +643,8 @@ export class QuotationsService {
       mimeType,
       size: file.buffer.length,
       sha256: hash,
-      storageKey: this.storage.keyFor(quotationId, hash, extension),
+      /* stable per image: the same bytes for the same quotation always map to one key */
+      storageKey: `quotations/${quotationId}/${hash}.${extension}`,
     };
   }
 

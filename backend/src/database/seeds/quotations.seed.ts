@@ -4,7 +4,7 @@ import { businessToday } from '../../common/validators/is-not-past-date.validato
 import type { CreateQuotationDto } from '../../quotations/dto/create-quotation.dto';
 import { QuotationsService } from '../../quotations/quotations.service';
 import { UsersService } from '../../users/users.service';
-import { VendorsService } from '../../vendors/vendors.service';
+import { VendorsService } from '../../vendors/services/vendors.service';
 import { SUPER_ADMIN } from './admin.seed';
 import { DEMO_VENDOR_PHONES } from './vendors.seed';
 

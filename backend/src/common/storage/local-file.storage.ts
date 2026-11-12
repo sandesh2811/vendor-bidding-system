@@ -5,20 +5,16 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { EnvironmentVariables } from '../../config/env.validation';
-import type { PhotoStorage, StoredFile } from './photo-storage';
+import type { FileStorage, StoredFile } from './file-storage';
 
-/* PhotoStorage on local disk: keys are paths under UPLOAD_DIR, e.g. quotations/<quotationId>/<sha256>.jpg */
+/* FileStorage on local disk: keys are paths under UPLOAD_DIR, e.g. quotations/<quotationId>/<sha256>.jpg */
 @Injectable()
-export class LocalPhotoStorage implements PhotoStorage {
-  private readonly logger = new Logger(LocalPhotoStorage.name);
+export class LocalFileStorage implements FileStorage {
+  private readonly logger = new Logger(LocalFileStorage.name);
   private readonly root: string;
 
   constructor(config: ConfigService<EnvironmentVariables, true>) {
     this.root = resolve(config.get('UPLOAD_DIR', { infer: true }));
-  }
-
-  keyFor(quotationId: string, sha256: string, extension: string): string {
-    return ['quotations', quotationId, `${sha256}.${extension}`].join('/');
   }
 
   /* write to a temp file then rename: readers never see a half-written image */
@@ -42,7 +38,7 @@ export class LocalPhotoStorage implements PhotoStorage {
     if (!info?.isFile()) {
       this.logger.warn({
         method: 'open',
-        message: 'Photo file missing on disk',
+        message: 'File missing on disk',
         key,
       });
       return null;

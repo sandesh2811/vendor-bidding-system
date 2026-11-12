@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import type { EnvironmentVariables } from '../config/env.validation';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { Session } from './entities/session.entity';
+import { SessionsRepository } from './sessions.repository';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Session]),
     UsersModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -20,7 +24,7 @@ import { AuthService } from './auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, SessionsRepository],
   exports: [AuthService],
 })
 export class AuthModule {}

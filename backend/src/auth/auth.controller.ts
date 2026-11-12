@@ -5,10 +5,11 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { CookieOptions, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 import { ACCESS_TOKEN_COOKIE } from '../common/constants';
 import { type EnvironmentVariables, NodeEnv } from '../config/env.validation';
 import type { User } from '../users/entities/user.entity';
@@ -16,6 +17,7 @@ import { AuthDocs } from './auth.docs';
 import { Auth, CurrentUser } from './auth.decorators';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { extractToken } from './user-context.middleware';
 
 @AuthDocs.controller()
 @Controller('auth')
@@ -30,9 +32,14 @@ export class AuthController {
   @AuthDocs.login()
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<User> {
     const { user, token } = await this.auth.login(dto);
+
+    /* switching accounts: the cookie being replaced must not stay valid until it expires */
+    const previous = extractToken(req);
+    if (previous) await this.auth.logout(previous);
 
     const maxAge =
       this.config.get('JWT_EXPIRES_IN_SECONDS', { infer: true }) * 1000;
@@ -44,7 +51,12 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @AuthDocs.logout()
-  logout(@Res({ passthrough: true }) res: Response): void {
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    /* excluded from UserContextMiddleware, so a stale or invalid cookie can still be cleared */
+    await this.auth.logout(extractToken(req));
     res.clearCookie(ACCESS_TOKEN_COOKIE, this.cookieOptions());
   }
 

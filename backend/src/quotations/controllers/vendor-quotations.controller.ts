@@ -18,7 +18,7 @@ import type { Vendor } from '../../vendors/entities/vendor.entity';
 import { DeclineQuotationDto } from '../dto/decline-quotation.dto';
 import type { ReceivedQuotationDto } from '../dto/list-quotations.dto';
 import { PhotoParamDto } from '../dto/photo-param.dto';
-import { toStreamableFile } from './photo-response';
+import { toStreamableFile } from '../../common/storage/to-streamable-file';
 import { VendorQuotationsDocs } from '../quotations.docs';
 import { QuotationsService } from '../quotations.service';
 

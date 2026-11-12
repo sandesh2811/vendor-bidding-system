@@ -5,6 +5,12 @@ export const SWAGGER_PATH = 'api/docs';
 export const ACCESS_TOKEN_COOKIE = 'access_token';
 export const ROLES_KEY = 'roles';
 
+/* fixed windows, per client IP (see common/rate-limit.ts) */
+export const RATE_LIMIT = {
+  API: { WINDOW_MS: 60 * 1000, LIMIT: 300 },
+  LOGIN: { WINDOW_MS: 15 * 60 * 1000, LIMIT: 10 },
+} as const;
+
 export const BCRYPT_COST = 12;
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 72;
@@ -36,15 +42,24 @@ export const PAYMENT = {
   MAX_AMOUNT: BID.MAX_UNIT_PRICE,
 } as const;
 
+/* stored file extension by detected (magic-number) type, see common/image-type.ts */
+export const IMAGE_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
 export const QUOTATION_PHOTO = {
   MAX_PER_QUOTATION: 10,
   MAX_BYTES: 5 * 1024 * 1024,
-  /* by detected (magic-number) type, see common/image-type.ts */
-  EXTENSIONS: {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-  } as Record<string, string>,
+  EXTENSIONS: IMAGE_EXTENSIONS,
+} as const;
+
+/* where Mero Event sends a vendor's money: a bank account and/or a payment QR image */
+export const VENDOR_PAYMENT = {
+  /* IBAN length, the longest common account format; Nepali account numbers are shorter */
+  ACCOUNT_NUMBER_MAX_LENGTH: 34,
+  QR_MAX_BYTES: 2 * 1024 * 1024,
 } as const;
 
 export const PAGINATION = {
@@ -112,6 +127,11 @@ export const CHECK_CONSTRAINTS = {
   PAYMENT_AMOUNT: {
     name: 'CHK_payments_amount_positive',
     message: 'amount must be more than 0',
+  },
+  /* bank name, account name and number are set together or not at all */
+  VENDOR_BANK_COMPLETE: {
+    name: 'CHK_vendor_payment_details_bank_complete',
+    message: 'Bank name, account name and account number go together',
   },
 } as const;
 

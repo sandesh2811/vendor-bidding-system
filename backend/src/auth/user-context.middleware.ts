@@ -14,7 +14,7 @@ export interface AuthedRequest extends Request {
 }
 
 /* Cookie for the browser portals, Bearer header for other clients */
-const extractToken = (req: Request): string | undefined => {
+export const extractToken = (req: Request): string | undefined => {
   const cookie: unknown = req.cookies?.[ACCESS_TOKEN_COOKIE];
   if (typeof cookie === 'string' && cookie) return cookie;
 

@@ -43,7 +43,7 @@ export class QuotationPhoto {
   @Column({ type: 'char', length: 64 })
   sha256: string;
 
-  /* PhotoStorage key (a path under UPLOAD_DIR for local storage); never sent to clients */
+  /* FileStorage key (a path under UPLOAD_DIR for local storage); never sent to clients */
   @ApiHideProperty()
   @Exclude()
   @Column()
