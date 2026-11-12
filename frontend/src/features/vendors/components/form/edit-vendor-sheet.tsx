@@ -1,6 +1,7 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { FormSheet } from "@/components/form/form-sheet";
 import { PendingButton } from "@/components/form/pending-button";
@@ -10,7 +11,13 @@ import { useRetainedValue } from "@/hooks/use-retained-value";
 import { formatDate } from "@/lib/format";
 import { useUpdateVendor } from "../../hooks/use-vendor-mutations";
 import type { Vendor } from "../../types";
-import { readVendorDetails } from "../../utils/vendor-form-data";
+import {
+  type VendorDetailsInput,
+  type VendorDetailsValues,
+  toVendorDetails,
+  vendorDetailsDefaults,
+  vendorDetailsSchema,
+} from "../../schemas/vendor-forms.schema";
 import { VendorStatusBadge } from "../shared/vendor-status-badge";
 import { VendorDetailsFields } from "./vendor-details-fields";
 
@@ -28,11 +35,10 @@ export function EditVendorSheet({
   const mutation = useUpdateVendor();
   const shown = useRetainedValue(vendor);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function onSubmit(values: VendorDetailsValues) {
     if (!shown) return;
     mutation.mutate(
-      { id: shown.id, input: readVendorDetails(new FormData(e.currentTarget)) },
+      { id: shown.id, input: toVendorDetails(values) },
       {
         onSuccess: (updated) => {
           toast.success(`${updated.name} updated`);
@@ -66,13 +72,25 @@ export function EditVendorSheet({
       }
     >
       {/* the sheet stays mounted so it can animate; the form appears once there is a vendor */}
-      {shown && (
-        <form key={shown.id} id={FORM_ID} onSubmit={onSubmit}>
-          <FieldGroup className="gap-8">
-            <VendorDetailsFields vendor={shown} />
-          </FieldGroup>
-        </form>
-      )}
+      {shown && <EditVendorForm key={shown.id} vendor={shown} onSubmit={onSubmit} />}
     </FormSheet>
+  );
+}
+
+function EditVendorForm({ vendor, onSubmit }: { vendor: Vendor; onSubmit: (values: VendorDetailsValues) => void }) {
+  const form = useForm<VendorDetailsInput, unknown, VendorDetailsValues>({
+    resolver: zodResolver(vendorDetailsSchema),
+    mode: "onTouched",
+    defaultValues: vendorDetailsDefaults(vendor),
+  });
+
+  return (
+    <FormProvider {...form}>
+      <form id={FORM_ID} noValidate onSubmit={form.handleSubmit(onSubmit)}>
+        <FieldGroup className="gap-8">
+          <VendorDetailsFields />
+        </FieldGroup>
+      </form>
+    </FormProvider>
   );
 }

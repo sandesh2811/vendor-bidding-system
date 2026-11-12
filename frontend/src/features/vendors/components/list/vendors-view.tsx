@@ -12,6 +12,7 @@ import type { Vendor } from "../../types";
 import { CreateVendorSheet } from "../form/create-vendor-sheet";
 import { EditVendorSheet } from "../form/edit-vendor-sheet";
 import { ToggleVendorDialog } from "../shared/toggle-vendor-dialog";
+import { PaymentDetailsSheet } from "./payment-details-sheet";
 import { vendorColumnClasses, vendorColumns, vendorSkeletons } from "./vendor-columns";
 import { VendorFilters } from "./vendor-filters";
 
@@ -20,9 +21,10 @@ export function VendorsView() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Vendor | null>(null);
   const [toggling, setToggling] = useState<Vendor | null>(null);
+  const [viewingPayment, setViewingPayment] = useState<Vendor | null>(null);
 
   /* setState functions are stable, so columns are built once */
-  const columns = useMemo(() => vendorColumns({ onEdit: setEditing, onToggleActive: setToggling }), []);
+  const columns = useMemo(() => vendorColumns({ onEdit: setEditing, onPaymentDetails: setViewingPayment, onToggleActive: setToggling }), []);
 
   const addButton = (
     <Button size="lg" className="px-4 has-data-[icon=inline-start]:pl-3" onClick={() => setCreating(true)}>
@@ -77,6 +79,7 @@ export function VendorsView() {
         }}
       />
       <ToggleVendorDialog vendor={toggling} onOpenChange={(open) => !open && setToggling(null)} />
+      <PaymentDetailsSheet vendor={viewingPayment} onOpenChange={(open) => !open && setViewingPayment(null)} />
     </>
   );
 }

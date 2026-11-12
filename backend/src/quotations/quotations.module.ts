@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { StorageModule } from '../common/storage/storage.module';
 import { QuotationItem } from './entities/quotation-item.entity';
 import { QuotationPhoto } from './entities/quotation-photo.entity';
 import { QuotationRecipient } from './entities/quotation-recipient.entity';
@@ -8,8 +9,6 @@ import { QuotationsController } from './controllers/quotations.controller';
 import { QuotationsRepository } from './quotations.repository';
 import { QuotationsService } from './quotations.service';
 import { VendorQuotationsController } from './controllers/vendor-quotations.controller';
-import { LocalPhotoStorage } from './storage/local-photo.storage';
-import { PHOTO_STORAGE } from './storage/photo-storage';
 
 @Module({
   imports: [
@@ -19,13 +18,9 @@ import { PHOTO_STORAGE } from './storage/photo-storage';
       QuotationPhoto,
       QuotationRecipient,
     ]),
+    StorageModule,
   ],
   controllers: [QuotationsController, VendorQuotationsController],
-  providers: [
-    QuotationsRepository,
-    QuotationsService,
-    /* swap useClass for an object-storage adapter; nothing else changes */
-    { provide: PHOTO_STORAGE, useClass: LocalPhotoStorage },
-  ],
+  providers: [QuotationsRepository, QuotationsService],
 })
 export class QuotationsModule {}

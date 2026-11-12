@@ -8,6 +8,7 @@ A booking is the winning bid of a quotation: what Mero Event owes the vendor, wh
 
 - **Created by bids**: `POST /bids/:id/select` inserts a `confirmed` booking with `amount = bid total`, `paid_amount = 0`. There is no "create booking" endpoint.
 - **Auth**: admin routes use `@Auth(UserRole.Admin)` with the `admin` serialization group; vendor routes use `@Auth(UserRole.Vendor)` and `@CurrentVendor()`.
+- **Vendors**: where to pay is the vendor's own payment details (bank account and/or QR, `vendors/README.md`). The admin booking page loads them from `GET /vendors/:id/payment-details`; bookings don't copy them.
 
 ## Core working
 

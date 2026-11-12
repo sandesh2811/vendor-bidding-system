@@ -1,20 +1,41 @@
 # VENDOR BIDDING SYSTEM
 
+**[▶ Watch the demo video](https://drive.google.com/file/d/108COrv-5c5EPq5hLQEJ1NzreMpqpMxv2/view?usp=sharing)**: both portals end to end, from creating a quotation to booking and paying a vendor.
+
 Vendor bidding and booking system for Mero Event. It has two portals:
 
-- **Admin portal**: manage vendors, create quotations (event details, items, reference photos), send them to one or more vendors, compare bids, select the winner, and track the booking's amount, payments and pending balance.
-- **Vendor portal**: see requests sent to you, review the details and photos, submit or decline a bid, follow your bids and bookings, and keep your profile up to date.
+- **Admin portal**: manage vendors, create quotations (event details, items, reference photos), send them to one or more vendors, compare bids, select the winner, and track the booking's amount, payments and pending balance, with the vendor's payment details (bank account or QR) on the booking.
+- **Vendor portal**: see requests sent to you, review the details and photos, submit or decline a bid, follow your bids and bookings, and keep your profile and payment details (bank account and/or QR) up to date.
 
 Each vendor sees only its own requests, bids and bookings.
+
+## Contents
+
+- [Demo video](#demo-video)
+- [Tech stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Demo logins](#demo-logins)
+- [Environment](#environment)
+- [API](#api)
+- [Migrations (backend)](#migrations-backend)
+- [Useful scripts](#useful-scripts)
+- [Known limits](#known-limits)
+- [Future scope](#future-scope)
+- [Module notes](#module-notes)
+
+## Demo video
+
+[Watch the full walkthrough on Google Drive](https://drive.google.com/file/d/108COrv-5c5EPq5hLQEJ1NzreMpqpMxv2/view?usp=sharing). It covers the admin portal (vendors, quotations, bid comparison, bookings and payments) and the vendor portal (requests, bidding, bookings and payment details).
 
 ## Tech stack
 
 | Part | Stack |
 | --- | --- |
-| Frontend (`frontend/`) | Next.js, TypeScript, TanStack Query, shadcn/ui, Tailwind CSS |
-| Backend (`backend/`) | NestJS, TypeORM, class-validator, Swagger |
+| Frontend (`frontend/`) | Next.js, TypeScript, TanStack Query, react-hook-form + zod, shadcn/ui, Tailwind CSS |
+| Backend (`backend/`) | NestJS, TypeORM, class-validator, Swagger, helmet, express-rate-limit |
 | Database | PostgreSQL (Docker) |
-| Auth | JWT in an httpOnly `access_token` cookie, admin and vendor roles |
+| Auth | JWT in an httpOnly `access_token` cookie, backed by a revocable server-side session; admin and vendor roles |
 
 ## Prerequisites
 
@@ -57,16 +78,22 @@ Open http://localhost:3000 and sign in with a demo login below.
 
 | Variable | Where | Purpose |
 | --- | --- | --- |
+| `NODE_ENV` | backend | Required: `development`, `test` or `production`. Production enables the `Secure` cookie and hides Swagger |
 | `DATABASE_URL` | backend | Postgres connection, matches `docker-compose.yml` by default |
 | `JWT_SECRET` | backend | At least 32 characters |
-| `JWT_EXPIRES_IN_SECONDS` | backend | Session length, 7 days by default |
+| `JWT_EXPIRES_IN_SECONDS` | backend | Session length, 7 days by default (logout revokes a session early) |
 | `FRONTEND_ORIGIN` | backend | Allowed CORS origin for the cookie |
-| `UPLOAD_DIR` | backend | Folder for uploaded quotation photos |
+| `TRUST_PROXY` | backend | Reverse-proxy hops in front of the API, `0` by default; set it behind a proxy so rate limits count per client |
+| `UPLOAD_DIR` | backend | Folder for uploaded quotation photos and vendor payment QR codes |
 | `NEXT_PUBLIC_API_URL` | frontend | API base URL, `http://localhost:4000/api/v1` |
 
 ## API
 
 All routes live under `/api/v1`. Swagger UI is at http://localhost:4000/api/docs (not served when `NODE_ENV=production`). Admin routes sit at the root (`/vendors`, `/quotations`, `/bookings`), and vendor routes under `/vendor/...` are always scoped to the signed-in vendor.
+
+Security: logout revokes the server-side session behind the JWT; failed logins are limited to 10 per 15 minutes per IP and the whole API to 300 requests per minute per IP (`429` beyond that); `helmet` sets the standard security headers.
+
+Validation: every form checks its fields with a zod schema that mirrors the API's DTO and shows errors under the field. The API re-validates everything (`class-validator`, unknown fields refused). Server errors appear as a toast, except on the login form, which shows them inline.
 
 ## Migrations (backend)
 
@@ -91,9 +118,9 @@ Reset the local database with `docker compose down -v`, then run the migrations 
 
 ## Known limits
 
-- Photos are stored on local disk, so a second server or a container restart loses them.
-- Logout doesn't revoke the JWT, so a stolen cookie works until it expires (7 days).
-- No password reset, no login rate limiting and no audit log yet.
+- Photos and payment QR codes are stored on local disk, so a second server or a container restart loses them.
+- No password reset and no audit log yet. Rate limits are kept in memory, so several API instances would each count separately.
+- An unknown login email is rejected faster than a wrong password, so response timing can reveal which emails exist (slowed down by the login rate limit).
 - No notifications: vendors only see new requests when they log in.
 - One winner per quotation, and a bid is overwritten when the vendor edits it (no history).
 - Retrying a payment request can record it twice (overpaying is still blocked by the database).

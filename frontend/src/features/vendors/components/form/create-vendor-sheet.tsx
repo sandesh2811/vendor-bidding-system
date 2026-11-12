@@ -1,11 +1,18 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
 import { FormSheet } from "@/components/form/form-sheet";
 import { PendingButton } from "@/components/form/pending-button";
 import { FieldGroup, FieldSeparator } from "@/components/ui/field";
 import { useCreateVendor } from "../../hooks/use-vendor-mutations";
-import { readCreateVendor } from "../../utils/vendor-form-data";
+import {
+  type CreateVendorFormInput,
+  type CreateVendorFormValues,
+  createVendorSchema,
+  toCreateVendor,
+  vendorDetailsDefaults,
+} from "../../schemas/vendor-forms.schema";
 import { VendorDetailsFields } from "./vendor-details-fields";
 import { VendorLoginFields } from "./vendor-login-fields";
 
@@ -13,11 +20,6 @@ const FORM_ID = "create-vendor-form";
 
 export function CreateVendorSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const mutation = useCreateVendor();
-
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    mutation.mutate(readCreateVendor(new FormData(e.currentTarget)), { onSuccess: () => onOpenChange(false) });
-  }
 
   return (
     <FormSheet
@@ -34,13 +36,28 @@ export function CreateVendorSheet({ open, onOpenChange }: { open: boolean; onOpe
         </PendingButton>
       }
     >
-      <form id={FORM_ID} onSubmit={onSubmit}>
+      {/* mounted per opening, so every open starts from an empty form */}
+      {open && <CreateVendorForm onSubmit={(input) => mutation.mutate(input, { onSuccess: () => onOpenChange(false) })} />}
+    </FormSheet>
+  );
+}
+
+function CreateVendorForm({ onSubmit }: { onSubmit: (input: ReturnType<typeof toCreateVendor>) => void }) {
+  const form = useForm<CreateVendorFormInput, unknown, CreateVendorFormValues>({
+    resolver: zodResolver(createVendorSchema),
+    mode: "onTouched",
+    defaultValues: { ...vendorDetailsDefaults(), loginName: "", loginEmail: "", loginPassword: "" },
+  });
+
+  return (
+    <FormProvider {...form}>
+      <form id={FORM_ID} noValidate onSubmit={form.handleSubmit((values) => onSubmit(toCreateVendor(values)))}>
         <FieldGroup className="gap-8">
           <VendorDetailsFields />
           <FieldSeparator />
           <VendorLoginFields />
         </FieldGroup>
       </form>
-    </FormSheet>
+    </FormProvider>
   );
 }

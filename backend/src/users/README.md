@@ -6,7 +6,7 @@ Login accounts for both portals: Mero Event admins and vendor users (one per ven
 
 ## Overview
 
-- **Auth**: verifies credentials (`findByEmailWithHash`, `verifyPassword`) and loads the session user (`findSessionUser`).
+- **Auth**: verifies credentials (`findByEmailWithHash`, `verifyPassword`). The session user is loaded by auth's `SessionsRepository` (session joined to user).
 - **Vendors**: vendor creation inserts the vendor's login in the same transaction. `findByVendorId` resolves a vendor's login.
 - **Quotations**: `quotations.created_by_id` references the admin user who created it.
 - **Seeds**: `createAdmin` is used by `database/seeds/admin.seed.ts`.
@@ -33,4 +33,4 @@ users/
 
 ## Notes
 
-- Deleting users is not supported. Vendors and quotations reference users with `ON DELETE RESTRICT`.
+- Deleting users is not supported. Vendors and quotations reference users with `ON DELETE RESTRICT`. Sessions (`auth/`) cascade with their user.

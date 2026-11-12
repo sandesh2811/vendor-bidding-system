@@ -4,19 +4,19 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { UserRole } from '../common/constants';
+import { UserRole } from '../../common/constants';
 import {
   type Paginated,
   toPaginated,
   toSkipTake,
-} from '../common/pagination.helper';
-import { UsersService } from '../users/users.service';
-import type { CreateVendorDto } from './dto/create-vendor.dto';
-import type { ListVendorsQueryDto } from './dto/list-vendors.dto';
-import type { UpdateVendorDto } from './dto/update-vendor.dto';
-import type { VendorSummaryDto } from './dto/vendor-summary.dto';
-import type { Vendor } from './entities/vendor.entity';
-import { VendorsRepository } from './vendors.repository';
+} from '../../common/pagination.helper';
+import { UsersService } from '../../users/users.service';
+import type { CreateVendorDto } from '../dto/create-vendor.dto';
+import type { ListVendorsQueryDto } from '../dto/list-vendors.dto';
+import type { UpdateVendorDto } from '../dto/update-vendor.dto';
+import type { VendorSummaryDto } from '../dto/vendor-summary.dto';
+import type { Vendor } from '../entities/vendor.entity';
+import { VendorsRepository } from '../vendors.repository';
 
 @Injectable()
 export class VendorsService {

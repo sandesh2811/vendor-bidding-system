@@ -143,28 +143,4 @@ export class UsersService {
 
     return user;
   }
-
-  /**
-   * Loads the user behind a session token.
-   *
-   * @param {string} id - User id from the JWT `sub`
-   * @returns {Promise<User | null>} The user, or null if it no longer exists
-   *
-   * @example
-   * ```ts
-   * const user = await usersService.findSessionUser(payload.sub);
-   * ```
-   */
-  async findSessionUser(id: string): Promise<User | null> {
-    const user = await this.users.findById(id);
-
-    this.logger.debug({
-      method: 'findSessionUser',
-      message: 'Loaded session user',
-      userId: id,
-      found: Boolean(user),
-    });
-
-    return user;
-  }
 }

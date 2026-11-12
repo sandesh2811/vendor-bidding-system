@@ -9,7 +9,7 @@ Mero Event admins create event work requests (event details, line items, referen
 - **Users**: `quotations.created_by_id` references the admin who created it. The id is visible only on admin routes.
 - **Vendors**: `quotation_recipients` links a quotation to vendors. Only **active** vendors can be added.
 - **Auth**: admin routes use `@Auth(UserRole.Admin)`. Vendor routes use `@Auth(UserRole.Vendor)` plus `@CurrentVendor()`, which `VendorContextMiddleware` sets.
-- **Storage**: photo bytes go through the `PhotoStorage` interface, injected with the `PHOTO_STORAGE` token. Today the token is bound to `LocalPhotoStorage` (`UPLOAD_DIR`).
+- **Storage**: photo bytes go through the shared `FileStorage` interface (`common/storage/`), injected with the `FILE_STORAGE` token from `StorageModule`. Today it is bound to `LocalFileStorage` (`UPLOAD_DIR`). Keys are `quotations/<quotationId>/<sha256>.<ext>`, built by the service.
 - **Bids**: the `bids` module prices a quotation per recipient. Bookings are created when a bid is selected (see `bids/README.md`).
 
 ## Core working
@@ -59,7 +59,6 @@ quotations/
   controllers/   admin + vendor-portal controllers, photo-response helper
   dto/           request validation and response shapes
   entities/      quotation, quotation-item, quotation-photo, quotation-recipient
-  storage/       PhotoStorage interface + PHOTO_STORAGE token, LocalPhotoStorage
   quotations.repository.ts   all SQL, transactions and locks
   quotations.service.ts      rules, idempotent create, error mapping, logging
   quotations.docs.ts         Swagger decorators
@@ -67,5 +66,5 @@ quotations/
 
 ## Extending
 
-- **Object storage**: write a class that `implements PhotoStorage` (`keyFor`, atomic `save`, `remove`, `open`), then bind it to `PHOTO_STORAGE` in `quotations.module.ts`. `storage_key` already stores an opaque key.
+- **Object storage**: write a class that `implements FileStorage` (atomic `save`, `remove`, `open`), then bind it to `FILE_STORAGE` in `common/storage/storage.module.ts`. `storage_key` already stores an opaque key.
 - **Limits** live in `common/constants.ts` (`QUOTATION`, `QUOTATION_PHOTO`). Rule messages live in `CHECK_CONSTRAINTS`.

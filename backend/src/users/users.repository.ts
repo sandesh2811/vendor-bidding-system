@@ -44,8 +44,4 @@ export class UsersRepository {
   findByVendorId(vendorId: string): Promise<User | null> {
     return this.repo.findOneBy({ vendorId });
   }
-
-  findById(id: string): Promise<User | null> {
-    return this.repo.findOneBy({ id });
-  }
 }

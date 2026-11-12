@@ -36,3 +36,21 @@ export interface ListVendorsParams {
   category?: VendorCategory;
   isActive?: boolean;
 }
+
+/* where Mero Event pays the vendor; every field is null (and hasQr false) until the vendor adds them */
+export interface PaymentDetails {
+  vendorId: string;
+  bankName: string | null;
+  accountName: string | null;
+  accountNumber: string | null;
+  branch: string | null;
+  hasQr: boolean;
+  updatedAt: string | null;
+}
+
+export interface BankAccountInput {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  branch?: string;
+}

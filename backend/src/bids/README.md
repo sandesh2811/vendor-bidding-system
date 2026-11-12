@@ -6,7 +6,7 @@ A vendor puts one price on every item of a quotation it was sent. Mero Event adm
 
 ## Overview
 
-- **Quotations**: a bid belongs to a quotation and a vendor that is a recipient of it. Bids are accepted only while the quotation's effective status is `open` (see `quotations/README.md`).
+- **Quotations**: a bid belongs to a quotation and a vendor that is a recipient of it. Bids are accepted only while the quotation's effective status is `open` (see `quotations/README.md`), and never from a vendor that declined it (409 until Mero Event sends it again).
 - **Bookings**: `bookings/entities/booking.entity.ts` holds the winning bid (see `bookings/README.md`). Bookings are created only by `POST /bids/:id/select`.
 - **Auth**: vendor routes use `@Auth(UserRole.Vendor)` and `@CurrentVendor()`. Admin routes use `@Auth(UserRole.Admin)`.
 
@@ -60,5 +60,5 @@ bids/
 
 ## Extending
 
-- **Bookings module**: move booking reads, payments and amount edits into `bookings/`. `select` stays the only way a booking is created.
-- **Decline / viewed**: would add a status to `quotation_recipients`. A declined vendor would then get 409 on `PUT`.
+- **Bid history**: a resubmission overwrites the bid in place. Keeping revisions would need an append-only `bid_revisions` table, with the bid pointing at its latest revision.
+- **Award per item**: `select` books one bid for the whole quotation. Splitting items across vendors would mean one booking per selected bid line group.

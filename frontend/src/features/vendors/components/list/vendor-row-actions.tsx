@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontalIcon, PencilIcon, PowerIcon, PowerOffIcon } from "lucide-react";
+import { LandmarkIcon, MoreHorizontalIcon, PencilIcon, PowerIcon, PowerOffIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,10 +13,11 @@ import type { Vendor } from "../../types";
 
 export interface VendorRowActionHandlers {
   onEdit: (vendor: Vendor) => void;
+  onPaymentDetails: (vendor: Vendor) => void;
   onToggleActive: (vendor: Vendor) => void;
 }
 
-export function VendorRowActions({ vendor, onEdit, onToggleActive }: VendorRowActionHandlers & { vendor: Vendor }) {
+export function VendorRowActions({ vendor, onEdit, onPaymentDetails, onToggleActive }: VendorRowActionHandlers & { vendor: Vendor }) {
   return (
     /* stop the row-level click (open editor) from firing when using the menu */
     <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
@@ -30,6 +31,10 @@ export function VendorRowActions({ vendor, onEdit, onToggleActive }: VendorRowAc
           <DropdownMenuItem onClick={() => onEdit(vendor)}>
             <PencilIcon />
             Edit details
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onPaymentDetails(vendor)}>
+            <LandmarkIcon />
+            Payment details
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {vendor.isActive ? (

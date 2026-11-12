@@ -11,6 +11,7 @@ import { QueryBoundary } from "@/components/layout/query-boundary";
 import { SectionCard } from "@/components/layout/section-card";
 import { Button } from "@/components/ui/button";
 import { EventFacts } from "@/features/quotations/components/shared/event-facts";
+import { VendorPaymentDetails } from "@/features/vendors/components/shared/vendor-payment-details";
 import { useRetainedValue } from "@/hooks/use-retained-value";
 import { formatDate, formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -113,6 +114,11 @@ function BookingDetailContent({ booking }: { booking: BookingDetail }) {
             )}
           />
         </SectionCard>
+        {!cancelled && (
+          <SectionCard title="Pay to" description={`${booking.vendor.name}'s payment details, as the vendor entered them.`}>
+            <VendorPaymentDetails vendorId={booking.vendorId} />
+          </SectionCard>
+        )}
         <div className={cn("grid items-start gap-6 md:gap-8", booking.notes && "xl:grid-cols-2")}>
           <SectionCard
             title="Event"

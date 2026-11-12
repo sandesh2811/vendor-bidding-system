@@ -1,40 +1,39 @@
-import { OptionalHint } from "@/components/form/optional-hint";
-import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { TextField } from "@/components/form/text-field";
+import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field";
 import { VENDOR_LIMITS } from "../../constants";
+import type { CreateVendorFormInput } from "../../schemas/vendor-forms.schema";
 
 const { NAME_MAX, EMAIL_MAX, PASSWORD_MIN, PASSWORD_MAX } = VENDOR_LIMITS;
 
-/* the vendor's portal login, set once at creation; read back with readCreateVendor */
+/* the vendor's portal login, set once at creation; must sit inside the create form's FormProvider */
 export function VendorLoginFields() {
   return (
     <FieldSet>
       <FieldLegend>Portal login</FieldLegend>
       <FieldDescription>Share these with the vendor so they can see requests and submit bids.</FieldDescription>
       <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="login-name">
-            Account holder <OptionalHint />
-          </FieldLabel>
-          <Input id="login-name" name="loginName" maxLength={NAME_MAX} placeholder="Defaults to contact person" />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="login-email">Login email</FieldLabel>
-          <Input id="login-email" name="loginEmail" type="email" required maxLength={EMAIL_MAX} autoComplete="off" />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="login-password">Temporary password</FieldLabel>
-          <Input
-            id="login-password"
-            name="loginPassword"
-            type="password"
-            required
-            minLength={PASSWORD_MIN}
-            maxLength={PASSWORD_MAX}
-            autoComplete="new-password"
-          />
-          <FieldDescription>At least {PASSWORD_MIN} characters.</FieldDescription>
-        </Field>
+        <TextField<CreateVendorFormInput>
+          name="loginName"
+          label="Account holder"
+          optional
+          maxLength={NAME_MAX}
+          placeholder="Defaults to contact person"
+        />
+        <TextField<CreateVendorFormInput>
+          name="loginEmail"
+          label="Login email"
+          type="email"
+          autoComplete="off"
+          maxLength={EMAIL_MAX}
+        />
+        <TextField<CreateVendorFormInput>
+          name="loginPassword"
+          label="Temporary password"
+          type="password"
+          autoComplete="new-password"
+          maxLength={PASSWORD_MAX}
+          description={`At least ${PASSWORD_MIN} characters.`}
+        />
       </FieldGroup>
     </FieldSet>
   );
